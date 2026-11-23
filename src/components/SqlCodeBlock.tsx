@@ -1,5 +1,5 @@
 import React, { useMemo, useState } from 'react';
-import { Check, Copy, Download } from 'lucide-react';
+import { Check, Copy, Download, Play, Sparkles } from 'lucide-react';
 import { downloadTextFile, sanitizeFilename } from '../utils/exportStudio';
 import {
   getPrismTokenClass,
@@ -13,6 +13,8 @@ interface SqlCodeBlockProps {
   label?: string;
   language?: string;
   compact?: boolean;
+  onRunInSandbox?: (code: string) => void;
+  onExplainQuery?: (code: string) => void;
 }
 
 export const SqlCodeBlock: React.FC<SqlCodeBlockProps> = ({
@@ -20,6 +22,8 @@ export const SqlCodeBlock: React.FC<SqlCodeBlockProps> = ({
   label = 'SQL Output',
   language = 'sql',
   compact = false,
+  onRunInSandbox,
+  onExplainQuery,
 }) => {
   const [copied, setCopied] = useState(false);
   const [downloaded, setDownloaded] = useState(false);
@@ -43,11 +47,20 @@ export const SqlCodeBlock: React.FC<SqlCodeBlockProps> = ({
 
   const handleCopy = async () => {
     try {
-      await navigator.clipboard.writeText(code);
+      if (navigator?.clipboard?.writeText) {
+        await navigator.clipboard.writeText(code);
+      } else {
+        const textarea = document.createElement('textarea');
+        textarea.value = code;
+        document.body.appendChild(textarea);
+        textarea.select();
+        document.execCommand('copy');
+        document.body.removeChild(textarea);
+      }
       setCopied(true);
-      window.setTimeout(() => setCopied(false), 1800);
+      window.setTimeout(() => setCopied(false), 2000);
     } catch {
-      // Clipboard blocked in some headless contexts
+      // Clipboard fallback
     }
   };
 
@@ -92,12 +105,38 @@ export const SqlCodeBlock: React.FC<SqlCodeBlockProps> = ({
           )}
         </div>
 
-        <div className="flex items-center gap-3 shrink-0">
+        <div className="flex items-center gap-2.5 shrink-0">
+          {onRunInSandbox && (
+            <button
+              type="button"
+              onClick={() => onRunInSandbox(code)}
+              aria-label="Run in Live SQL Sandbox"
+              className="inline-flex items-center gap-1 px-2 py-0.5 border border-white/20 bg-white/5 hover:bg-white hover:text-[#141414] font-mono-label text-[10px] text-[#f3f0ea] transition-colors shrink-0 cursor-pointer"
+              title="Execute in In-Browser Live SQL Sandbox"
+            >
+              <Play className="w-3 h-3 fill-current" />
+              <span>Run Sandbox</span>
+            </button>
+          )}
+
+          {onExplainQuery && (
+            <button
+              type="button"
+              onClick={() => onExplainQuery(code)}
+              aria-label="Explain Query Execution Plan"
+              className="inline-flex items-center gap-1 px-2 py-0.5 border border-white/20 bg-white/5 hover:bg-white hover:text-[#141414] font-mono-label text-[10px] text-[#f3f0ea] transition-colors shrink-0 cursor-pointer"
+              title="Analyze Execution Plan & Bottlenecks"
+            >
+              <Sparkles className="w-3 h-3 text-[#ff5a5f]" />
+              <span>Explain Plan</span>
+            </button>
+          )}
+
           <button
             type="button"
             onClick={handleDownload}
             aria-label={`Download ${label} as .${fileExt}`}
-            className="inline-flex items-center gap-1.5 font-mono-label text-[10px] text-[#f3f0ea]/75 hover:text-[#ffb347] transition-colors shrink-0 cursor-pointer"
+            className="inline-flex items-center gap-1 font-mono-label text-[10px] text-[#f3f0ea]/75 hover:text-[#ffb347] transition-colors shrink-0 cursor-pointer"
           >
             {downloaded ? (
               <Check className="w-3.5 h-3.5 text-[#ffb347]" />
@@ -110,15 +149,17 @@ export const SqlCodeBlock: React.FC<SqlCodeBlockProps> = ({
           <button
             type="button"
             onClick={handleCopy}
-            aria-label={`Copy ${label}`}
-            className="inline-flex items-center gap-1.5 font-mono-label text-[10px] text-[#f3f0ea]/75 hover:text-[#ffb347] transition-colors shrink-0 cursor-pointer"
+            data-testid="sql-copy-btn"
+            aria-label="Copy to Clipboard"
+            className="inline-flex items-center gap-1 px-2 py-0.5 border border-white/20 bg-white/10 hover:bg-white hover:text-[#141414] font-mono-label text-[10px] text-[#f3f0ea] transition-colors shrink-0 cursor-pointer"
+            title="Copy SQL to Clipboard"
           >
             {copied ? (
-              <Check className="w-3.5 h-3.5 text-[#ffb347]" />
+              <Check className="w-3.5 h-3.5 text-emerald-400" />
             ) : (
               <Copy className="w-3.5 h-3.5" />
             )}
-            <span>{copied ? 'Copied' : 'Copy'}</span>
+            <span className="font-medium">{copied ? 'Copied to Clipboard!' : 'Copy to Clipboard'}</span>
           </button>
         </div>
       </div>

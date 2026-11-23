@@ -225,6 +225,24 @@ export const ERDiagramCanvas: React.FC<ERDiagramCanvasProps> = ({ diagram, diale
             </button>
           )}
 
+          <button
+            type="button"
+            onClick={() => handleExportFormat('png')}
+            className="inline-flex items-center gap-1 px-2.5 py-1.5 border border-[#141414]/20 bg-[#f6f4ef] hover:bg-[#141414] hover:text-[#efece6] font-mono-label text-[10px] transition-colors whitespace-nowrap cursor-pointer"
+            title="Download Mermaid ER diagram as PNG"
+          >
+            <span>PNG</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => handleExportFormat('svg')}
+            className="inline-flex items-center gap-1 px-2.5 py-1.5 border border-[#141414]/20 bg-[#f6f4ef] hover:bg-[#141414] hover:text-[#efece6] font-mono-label text-[10px] transition-colors whitespace-nowrap cursor-pointer"
+            title="Download Mermaid ER diagram as SVG"
+          >
+            <span>SVG</span>
+          </button>
+
           <ExportMenu
             options={exportOptions}
             onExport={handleExportFormat}

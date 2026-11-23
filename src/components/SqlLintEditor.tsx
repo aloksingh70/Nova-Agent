@@ -1,15 +1,18 @@
-import React, { useMemo, useRef, useState } from 'react';
+import React, { useMemo, useRef, useState, useEffect } from 'react';
 import {
   AlertCircle,
   AlertTriangle,
   CheckCircle2,
   Code2,
+  Database,
   Info,
   Sparkles,
+  Table as TableIcon,
   Wand2,
   Wrench,
 } from 'lucide-react';
 import type { SqlDialect } from '../types/nova';
+import { parseSqlDdl } from '../utils/sqlDdlParser';
 import { getPrismTokenClass, highlightCodeWithPrism, resolvePrismLanguage } from '../utils/prismHighlight';
 import {
   applyAllLintQuickFixes,
@@ -24,6 +27,7 @@ interface SqlLintEditorProps {
   id: string;
   value: string;
   dialect: SqlDialect;
+  schemaContext?: string;
   placeholder: string;
   forceSqlMode?: boolean;
   onToggleForceSqlMode?: () => void;
@@ -112,6 +116,7 @@ export const SqlLintEditor: React.FC<SqlLintEditorProps> = ({
   id,
   value,
   dialect,
+  schemaContext = '',
   placeholder,
   forceSqlMode = false,
   onToggleForceSqlMode,
@@ -124,8 +129,90 @@ export const SqlLintEditor: React.FC<SqlLintEditorProps> = ({
   const [panelExpanded, setPanelExpanded] = useState(true);
   const [cursorIndex, setCursorIndex] = useState(0);
 
-  const lint = useMemo(() => lintSqlLive(value, dialect), [value, dialect]);
+  const lint = useMemo(() => lintSqlLive(value, dialect, schemaContext), [value, dialect, schemaContext]);
   const isSqlMode = forceSqlMode || lint.isSql;
+
+  // Schema-aware tables & columns
+  const schemaEntities = useMemo(() => {
+    if (!schemaContext?.trim()) return [];
+    try {
+      const parsed = parseSqlDdl(schemaContext);
+      return parsed.diagram.entities || [];
+    } catch {
+      return [];
+    }
+  }, [schemaContext]);
+
+  const [autocompleteIndex, setAutocompleteIndex] = useState(0);
+  const [dismissedAutocomplete, setDismissedAutocomplete] = useState(false);
+
+  const autocompleteMatch = useMemo(() => {
+    if (!schemaEntities.length || !isSqlMode || dismissedAutocomplete) return null;
+    const textBefore = value.slice(0, cursorIndex);
+
+    // 1. Column autocomplete after table dot: e.g. "orders." or "orders.c"
+    const dotMatch = textBefore.match(/\b([A-Za-z0-9_]+)\.([A-Za-z0-9_]*)$/);
+    if (dotMatch) {
+      const targetTable = dotMatch[1].toLowerCase();
+      const prefix = dotMatch[2].toLowerCase();
+      const entity = schemaEntities.find((e) => e.name.toLowerCase() === targetTable);
+      if (entity) {
+        const items = entity.columns
+          .filter((c) => !prefix || c.name.toLowerCase().startsWith(prefix))
+          .map((c) => ({
+            label: c.name,
+            detail: c.type + (c.isPrimaryKey ? ' (PK)' : c.isForeignKey ? ' (FK)' : ''),
+            kind: 'column' as const,
+            replaceStart: cursorIndex - prefix.length,
+            replaceEnd: cursorIndex,
+            insertText: c.name,
+          }));
+        if (items.length > 0) return { items, title: `Columns in "${entity.name}"` };
+      }
+    }
+
+    // 2. Table autocomplete after FROM or JOIN: e.g. "FROM " or "JOIN cust"
+    const fromMatch = textBefore.match(/\b(?:FROM|JOIN)\s+([A-Za-z0-9_]*)$/i);
+    if (fromMatch) {
+      const prefix = fromMatch[1].toLowerCase();
+      const items = schemaEntities
+        .filter((e) => !prefix || e.name.toLowerCase().startsWith(prefix))
+        .map((e) => ({
+          label: e.name,
+          detail: `${e.columns.length} columns`,
+          kind: 'table' as const,
+          replaceStart: cursorIndex - prefix.length,
+          replaceEnd: cursorIndex,
+          insertText: e.name,
+        }));
+      if (items.length > 0) return { items, title: 'Tables in Schema' };
+    }
+
+    return null;
+  }, [value, cursorIndex, schemaEntities, isSqlMode, dismissedAutocomplete]);
+
+  useEffect(() => {
+    setAutocompleteIndex(0);
+  }, [autocompleteMatch?.items]);
+
+  const handleApplySuggestion = (suggestion: {
+    insertText: string;
+    replaceStart: number;
+    replaceEnd: number;
+  }) => {
+    const nextVal =
+      value.slice(0, suggestion.replaceStart) +
+      suggestion.insertText +
+      value.slice(suggestion.replaceEnd);
+    onChange(nextVal);
+    const newCursor = suggestion.replaceStart + suggestion.insertText.length;
+    setCursorIndex(newCursor);
+    setDismissedAutocomplete(false);
+    setTimeout(() => {
+      textareaRef.current?.focus();
+      textareaRef.current?.setSelectionRange(newCursor, newCursor);
+    }, 10);
+  };
 
   const slices = useMemo(
     () => (isSqlMode ? buildAnnotatedSlices(value, dialect, lint.diagnostics) : []),
@@ -176,6 +263,33 @@ export const SqlLintEditor: React.FC<SqlLintEditorProps> = ({
   };
 
   const handleEditorKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+    // Autocomplete navigation
+    if (autocompleteMatch && autocompleteMatch.items.length > 0) {
+      if (e.key === 'ArrowDown') {
+        e.preventDefault();
+        setAutocompleteIndex((i) => (i + 1) % autocompleteMatch.items.length);
+        return;
+      }
+      if (e.key === 'ArrowUp') {
+        e.preventDefault();
+        setAutocompleteIndex((i) => (i - 1 + autocompleteMatch.items.length) % autocompleteMatch.items.length);
+        return;
+      }
+      if (e.key === 'Enter' || e.key === 'Tab') {
+        e.preventDefault();
+        const selected = autocompleteMatch.items[autocompleteIndex];
+        if (selected) {
+          handleApplySuggestion(selected);
+          return;
+        }
+      }
+      if (e.key === 'Escape') {
+        e.preventDefault();
+        setDismissedAutocomplete(true);
+        return;
+      }
+    }
+
     if (isSqlMode && e.key === 'Tab') {
       e.preventDefault();
       const el = e.currentTarget;
@@ -496,6 +610,45 @@ export const SqlLintEditor: React.FC<SqlLintEditorProps> = ({
                 </span>
               ))}
               {value.endsWith('\n') ? '\n ' : ''}
+            </div>
+          )}
+
+          {/* Autocomplete Suggestions Popup */}
+          {autocompleteMatch && autocompleteMatch.items.length > 0 && (
+            <div
+              data-testid="sql-autocomplete-dropdown"
+              className="absolute left-2.5 bottom-full mb-1 w-64 bg-[#fbf9f5] border border-[#141414] shadow-xl z-50 overflow-hidden divide-y divide-[#141414]/10 animate-in fade-in duration-100"
+            >
+              <div className="px-2.5 py-1 bg-[#efece6] flex items-center justify-between text-[10px] font-mono text-[#141414]/70">
+                <span className="font-semibold flex items-center gap-1">
+                  <Database className="w-3 h-3 text-[#ff5a5f]" />
+                  {autocompleteMatch.title}
+                </span>
+                <span className="text-[9px] text-[#141414]/40">↑↓ Tab</span>
+              </div>
+              <div className="max-h-40 overflow-y-auto nova-scroll p-1 space-y-0.5">
+                {autocompleteMatch.items.map((item, idx) => {
+                  const isSelected = idx === autocompleteIndex;
+                  return (
+                    <button
+                      key={item.label}
+                      type="button"
+                      onMouseDown={(e) => {
+                        e.preventDefault();
+                        handleApplySuggestion(item);
+                      }}
+                      className={`w-full px-2 py-1 text-left font-mono text-[11px] flex items-center justify-between transition-colors cursor-pointer ${
+                        isSelected ? 'bg-[#141414] text-[#efece6]' : 'text-[#141414] hover:bg-[#efece6]'
+                      }`}
+                    >
+                      <span className="font-semibold truncate">{item.label}</span>
+                      <span className={`text-[9.5px] truncate ${isSelected ? 'text-[#efece6]/70' : 'text-[#141414]/50'}`}>
+                        {item.detail}
+                      </span>
+                    </button>
+                  );
+                })}
+              </div>
             </div>
           )}
 

@@ -33,6 +33,11 @@ import {
   diffSqlSchemas,
   type DiffStatus,
 } from '../utils/schemaDiff';
+import {
+  checkMigrationSafety,
+  generateRollbackScript,
+  exportDdlToORM,
+} from '../utils/migrationSafety';
 import { BROKEN_DEBUG_SCHEMA_DDL, parseSqlDdl } from '../utils/sqlDdlParser';
 import { PRESET_SCHEMAS } from '../utils/sqlFormatter';
 import { ExportMenu, type ExportMenuOption } from './ExportMenu';
@@ -142,6 +147,7 @@ export const SchemaERVisualizer: React.FC<SchemaERVisualizerProps> = ({
   const [showMigrationSql, setShowMigrationSql] = useState(false);
   const [onlyDiffChanges, setOnlyDiffChanges] = useState(false);
   const [focusedDiffTable, setFocusedDiffTable] = useState<string | null>(null);
+  const [migrationView, setMigrationView] = useState<'up' | 'down' | 'prisma' | 'drizzle' | 'typeorm'>('up');
 
   const [activeTab, setActiveTab] = useState<VisualizerTab>(initialTab);
   const [lastVisualTab, setLastVisualTab] = useState<'mermaid' | 'diff'>(
@@ -186,6 +192,9 @@ export const SchemaERVisualizer: React.FC<SchemaERVisualizerProps> = ({
     () => diffSqlSchemas(baseDiffDdl, targetDiffDdl, dialect, { onlyChanges: onlyDiffChanges }),
     [baseDiffDdl, targetDiffDdl, dialect, onlyDiffChanges]
   );
+
+  const safetyReport = useMemo(() => checkMigrationSafety(diffResult), [diffResult]);
+  const rollbackSql = useMemo(() => generateRollbackScript(diffResult, dialect), [diffResult, dialect]);
 
   const isDiffMode = activeTab === 'diff';
   const showingDiffSource = isDiffMode || (activeTab === 'code' && lastVisualTab === 'diff');
@@ -1010,6 +1019,26 @@ export const SchemaERVisualizer: React.FC<SchemaERVisualizerProps> = ({
                 <span>{copiedMermaid ? 'Copied' : 'Copy Mermaid'}</span>
               </button>
 
+              <button
+                type="button"
+                disabled={!renderedSvg}
+                onClick={() => handleExportFormat('png')}
+                className="inline-flex items-center gap-1 px-2.5 py-1.5 border border-[#141414]/20 bg-[#f6f4ef] hover:bg-[#141414] hover:text-[#efece6] disabled:opacity-40 font-mono-label text-[10px] transition-colors whitespace-nowrap cursor-pointer"
+                title="Export ER diagram as high-resolution PNG image"
+              >
+                <span>PNG</span>
+              </button>
+
+              <button
+                type="button"
+                disabled={!renderedSvg}
+                onClick={() => handleExportFormat('svg')}
+                className="inline-flex items-center gap-1 px-2.5 py-1.5 border border-[#141414]/20 bg-[#f6f4ef] hover:bg-[#141414] hover:text-[#efece6] disabled:opacity-40 font-mono-label text-[10px] transition-colors whitespace-nowrap cursor-pointer"
+                title="Export ER diagram as vector SVG image"
+              >
+                <span>SVG</span>
+              </button>
+
               <ExportMenu
                 options={exportOptions}
                 onExport={handleExportFormat}
@@ -1354,12 +1383,116 @@ export const SchemaERVisualizer: React.FC<SchemaERVisualizerProps> = ({
           )}
 
           {showMigrationSql && (
-            <SqlCodeBlock
-              code={diffResult.migrationSql}
-              label={`Generated Migration SQL (${dialect.toUpperCase()})`}
-              language="sql"
-              compact
-            />
+            <div className="space-y-3 pt-2">
+              {/* Migration Safety Card */}
+              <div
+                className={`p-3 border font-mono text-[11px] space-y-2 ${
+                  safetyReport.score < 50
+                    ? 'border-red-500/40 bg-red-50/70 text-red-950'
+                    : safetyReport.score < 80
+                      ? 'border-amber-500/40 bg-amber-50/70 text-amber-950'
+                      : 'border-emerald-500/40 bg-emerald-50/70 text-emerald-950'
+                }`}
+              >
+                <div className="flex items-center justify-between">
+                  <span className="font-semibold flex items-center gap-1.5">
+                    <span className="w-2 h-2 rounded-full bg-current" />
+                    Migration Safety Check: Score {safetyReport.score}/100 ({safetyReport.status.toUpperCase()})
+                  </span>
+                  <span className="text-[10px] opacity-80">
+                    {safetyReport.hazards.length} {safetyReport.hazards.length === 1 ? 'hazard' : 'hazards'} identified
+                  </span>
+                </div>
+
+                {safetyReport.hazards.length > 0 ? (
+                  <div className="space-y-1.5 divide-y divide-current/10 pt-1">
+                    {safetyReport.hazards.map((h) => (
+                      <div key={h.id} className="pt-1.5 space-y-0.5">
+                        <div className="flex items-center justify-between font-semibold">
+                          <span>{h.title}</span>
+                          <span className="uppercase text-[9.5px] px-1 py-0.2 border border-current/30">
+                            {h.risk} Risk
+                          </span>
+                        </div>
+                        <p className="opacity-80 text-[10.5px]">{h.description}</p>
+                        <p className="opacity-90 text-[10.5px] italic">💡 Mitigation: {h.mitigation}</p>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="opacity-80 text-[10.5px]">
+                    No destructive table drops, column drops, or locking NOT NULL mutations detected.
+                  </p>
+                )}
+              </div>
+
+              {/* View Selector: Up vs Down vs ORM Models */}
+              <div className="flex flex-wrap items-center justify-between gap-2 border-b border-[#141414]/15 pb-2">
+                <div className="flex items-center gap-1">
+                  <button
+                    type="button"
+                    onClick={() => setMigrationView('up')}
+                    className={`px-2.5 py-1 font-mono-label text-[10px] border transition-colors cursor-pointer ${
+                      migrationView === 'up'
+                        ? 'bg-[#141414] text-[#efece6] border-[#141414]'
+                        : 'bg-[#f6f4ef] text-[#141414] border-[#141414]/25 hover:border-[#141414]'
+                    }`}
+                  >
+                    migrate.up.sql
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => setMigrationView('down')}
+                    className={`px-2.5 py-1 font-mono-label text-[10px] border transition-colors cursor-pointer ${
+                      migrationView === 'down'
+                        ? 'bg-[#141414] text-[#efece6] border-[#141414]'
+                        : 'bg-[#f6f4ef] text-[#141414] border-[#141414]/25 hover:border-[#141414]'
+                    }`}
+                  >
+                    migrate.down.sql (Rollback)
+                  </button>
+                </div>
+
+                <div className="flex items-center gap-1">
+                  <span className="font-mono text-[10px] text-[#141414]/60 mr-1">ORM Export:</span>
+                  {(['prisma', 'drizzle', 'typeorm'] as const).map((orm) => (
+                    <button
+                      key={orm}
+                      type="button"
+                      onClick={() => setMigrationView(orm)}
+                      className={`px-2 py-0.5 font-mono-label text-[9.5px] border uppercase transition-colors cursor-pointer ${
+                        migrationView === orm
+                          ? 'bg-[#141414] text-[#efece6] border-[#141414]'
+                          : 'bg-[#efece6] text-[#141414] border-[#141414]/20 hover:border-[#141414]'
+                      }`}
+                    >
+                      {orm}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Code Display */}
+              <SqlCodeBlock
+                code={
+                  migrationView === 'up'
+                    ? diffResult.migrationSql
+                    : migrationView === 'down'
+                      ? rollbackSql
+                      : exportDdlToORM(targetDiffDdl || ddl, migrationView)
+                }
+                label={
+                  migrationView === 'up'
+                    ? `Forward Migration (migrate.up.sql - ${dialect.toUpperCase()})`
+                    : migrationView === 'down'
+                      ? `Rollback Script (migrate.down.sql - ${dialect.toUpperCase()})`
+                      : `${migrationView.toUpperCase()} Schema Model Export`
+                }
+                language={migrationView === 'prisma' ? 'graphql' : migrationView === 'up' || migrationView === 'down' ? 'sql' : 'typescript'}
+                compact
+              />
+            </div>
           )}
         </div>
       )}

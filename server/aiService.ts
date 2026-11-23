@@ -248,11 +248,10 @@ async function callGemini(input: ChatEngineInput, systemInstruction: string, ful
 
   const ai = new GoogleGenAI({
     apiKey,
-    httpOptions: { headers: { 'User-Agent': 'aistudio-build' } },
   });
 
-  const defaultModel = (process.env.GEMINI_MODEL || 'gemini-3.5-flash-lite').trim();
-  const candidateModels = [defaultModel, 'gemini-3.5-flash-lite', 'gemini-3.8-flash', 'gemini-3.5-flash'].filter(
+  const requestedModel = input.modelId || process.env.GEMINI_MODEL || 'gemini-3.5-flash-lite';
+  const candidateModels = [requestedModel, 'gemini-3.5-flash-lite', 'gemini-3.8-flash'].filter(
     (v, i, a) => a.indexOf(v) === i
   );
 
@@ -261,20 +260,24 @@ async function callGemini(input: ChatEngineInput, systemInstruction: string, ful
 
   for (const model of candidateModels) {
     try {
+      console.log(`[Gemini] Generating response with model: ${model}`);
       response = await ai.models.generateContent({
         model,
         contents: fullPrompt,
         config: {
           systemInstruction,
           responseMimeType: 'application/json',
-          responseSchema: RESPONSE_SCHEMA,
         },
       });
-      if (response?.text) break;
+      if (response?.text) {
+        console.log(`[Gemini] Success with model: ${model}`);
+        break;
+      }
     } catch (err: any) {
+      console.warn(`[Gemini] Failed with model ${model}:`, err?.message || err);
       lastError = err;
       const status = err?.status || err?.code;
-      if (status === 404 || status === 503 || String(err?.message).includes('is no longer available')) {
+      if (status === 404 || status === 503 || String(err?.message).includes('is no longer available') || String(err?.message).includes('high demand')) {
         continue;
       }
       throw err;

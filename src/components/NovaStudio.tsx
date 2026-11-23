@@ -5,12 +5,15 @@ import {
   ArrowLeft,
   ArrowUp,
   ArrowUpRight,
+  Bookmark,
   Check,
   Code2,
   Database,
   Download,
   GitBranch,
   GitCompareArrows,
+  History,
+  Layers,
   ListPlus,
   LogIn,
   LogOut,
@@ -22,6 +25,7 @@ import {
   RotateCw,
   Search,
   Send,
+  Sparkles,
   Trash2,
   User,
   Wrench,
@@ -52,6 +56,15 @@ import { SchemaERVisualizer } from './SchemaERVisualizer';
 import { SqlCodeBlock } from './SqlCodeBlock';
 import { SqlLintEditor } from './SqlLintEditor';
 import { ModelSelector, DEFAULT_MODELS, DEFAULT_ACTIVE_MODEL } from './ModelSelector';
+import {
+  getRecentQueries,
+  addRecentQuery,
+  type RecentQueryItem,
+} from '../utils/recentQueries';
+import { LiveSqlSandbox } from './LiveSqlSandbox';
+import { ExplainPlanExplorer } from './ExplainPlanExplorer';
+import { MultiDialectTranslator } from './MultiDialectTranslator';
+import { SnippetLibraryModal } from './SnippetLibraryModal';
 
 interface NovaStudioProps {
   user: AuthUser | null;
@@ -103,11 +116,19 @@ export const NovaStudio: React.FC<NovaStudioProps> = ({
   const [dialect, setDialect] = useState<SqlDialect>(activeSession?.dialect || 'postgresql');
   const [schemaContext, setSchemaContext] = useState<string>(activeSession?.schemaContext || '');
   const [showSchemaDrawer, setShowSchemaDrawer] = useState(false);
-  const [activeLab, setActiveLab] = useState<'none' | 'query' | 'schema-er' | 'schema-diff'>(() => {
+  const [activeLab, setActiveLab] = useState<
+    'none' | 'query' | 'schema-er' | 'schema-diff' | 'sandbox' | 'explain-plan' | 'translator'
+  >(() => {
     if (initialMode === 'optimize' || initialMode === 'debug') return 'query';
     if (initialMode === 'schema-builder') return 'schema-er';
     return 'none';
   });
+  const [sandboxSql, setSandboxSql] = useState<string>('');
+  const [explainSql, setExplainSql] = useState<string>('');
+  const [showSnippetModal, setShowSnippetModal] = useState<boolean>(false);
+  const [recentQueries, setRecentQueries] = useState<RecentQueryItem[]>([]);
+  const [recentIndex, setRecentIndex] = useState<number>(-1);
+  const [showRecentDropdown, setShowRecentDropdown] = useState<boolean>(false);
   const [forceSqlMode, setForceSqlMode] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [input, setInput] = useState(initialPrompt || '');
@@ -197,6 +218,64 @@ export const NovaStudio: React.FC<NovaStudioProps> = ({
   useEffect(() => {
     if (initialPrompt) setInput(initialPrompt);
   }, [initialPrompt]);
+
+  // Load cached recent queries on session change
+  useEffect(() => {
+    setRecentQueries(getRecentQueries(activeSessionId));
+    setRecentIndex(-1);
+  }, [activeSessionId]);
+
+  // Parse shareable read-only snapshot links: ?snapshot=<base64>
+  useEffect(() => {
+    try {
+      if (typeof window !== 'undefined' && window.location.search) {
+        const params = new URLSearchParams(window.location.search);
+        const snapParam = params.get('snapshot');
+        if (snapParam) {
+          const raw = decodeURIComponent(escape(atob(snapParam)));
+          const parsed = JSON.parse(raw);
+          if (parsed && typeof parsed.ddl === 'string') {
+            setSchemaContext(parsed.ddl);
+            setActiveLab('schema-er');
+          }
+        }
+      }
+    } catch (err) {
+      console.warn('Could not parse snapshot parameter:', err);
+    }
+  }, []);
+
+  const cycleRecent = (direction: 'prev' | 'next') => {
+    if (recentQueries.length === 0) return;
+    let nextIdx = recentIndex;
+    if (direction === 'prev') {
+      nextIdx = recentIndex < recentQueries.length - 1 ? recentIndex + 1 : 0;
+    } else {
+      nextIdx = recentIndex > 0 ? recentIndex - 1 : recentQueries.length - 1;
+    }
+    setRecentIndex(nextIdx);
+    const item = recentQueries[nextIdx];
+    if (item) {
+      setInput(item.sql);
+      setForceSqlMode(true);
+    }
+  };
+
+  const selectRecentQuery = (item: RecentQueryItem) => {
+    setInput(item.sql);
+    setForceSqlMode(true);
+    setShowRecentDropdown(false);
+  };
+
+  const handleRunInSandbox = (code: string) => {
+    setSandboxSql(code);
+    setActiveLab('sandbox');
+  };
+
+  const handleExplainQuery = (code: string) => {
+    setExplainSql(code);
+    setActiveLab('explain-plan');
+  };
 
   useEffect(() => {
     const count = activeSession?.messages.length ?? 0;
@@ -304,6 +383,20 @@ export const NovaStudio: React.FC<NovaStudioProps> = ({
           };
           onUpdateSession(updated);
         }
+
+        // Cache successful SQL in Recent Queries
+        const assistantMsg =
+          data.assistantMessage ||
+          (data.session ? [...data.session.messages].reverse().find((m: ChatMessage) => m.role === 'assistant') : null);
+        if (assistantMsg?.payload?.primaryCode) {
+          addRecentQuery(assistantMsg.payload.primaryCode, {
+            sessionId: activeSessionId,
+            dialect: opts.targetDialect,
+            summary: assistantMsg.payload.summary?.slice(0, 80) || opts.promptText.slice(0, 60),
+          });
+          setRecentQueries(getRecentQueries(activeSessionId));
+        }
+
         return { ok: true };
       } catch {
         const errMsg = 'Network error while contacting the NOVA Agent backend.';
@@ -467,6 +560,8 @@ export const NovaStudio: React.FC<NovaStudioProps> = ({
               label="Original Query"
               language={payload.codeLanguage || 'sql'}
               compact
+              onRunInSandbox={handleRunInSandbox}
+              onExplainQuery={handleExplainQuery}
             />
             <SqlCodeBlock
               code={payload.primaryCode}
@@ -479,6 +574,8 @@ export const NovaStudio: React.FC<NovaStudioProps> = ({
               }
               language={payload.codeLanguage || 'sql'}
               compact
+              onRunInSandbox={handleRunInSandbox}
+              onExplainQuery={handleExplainQuery}
             />
           </div>
         )}
@@ -493,6 +590,8 @@ export const NovaStudio: React.FC<NovaStudioProps> = ({
                 : `${msg.dialect.toUpperCase()} Query`
             }
             language={payload.codeLanguage || 'sql'}
+            onRunInSandbox={handleRunInSandbox}
+            onExplainQuery={handleExplainQuery}
           />
         )}
 
@@ -568,6 +667,7 @@ export const NovaStudio: React.FC<NovaStudioProps> = ({
               label="Index DDL"
               language="sql"
               compact
+              onRunInSandbox={handleRunInSandbox}
             />
           </div>
         )}
@@ -1065,6 +1165,58 @@ export const NovaStudio: React.FC<NovaStudioProps> = ({
                 <Wrench className="w-3.5 h-3.5" />
                 <span>{activeLab === 'query' ? 'Close Lab' : 'Query Lab'}</span>
               </button>
+
+              <button
+                type="button"
+                data-testid="sandbox-toggle"
+                onClick={() => setActiveLab((prev) => (prev === 'sandbox' ? 'none' : 'sandbox'))}
+                className={`px-2.5 py-1.5 font-mono-label text-[10px] whitespace-nowrap shrink-0 border inline-flex items-center gap-1.5 transition-colors cursor-pointer ${
+                  activeLab === 'sandbox'
+                    ? 'border-[#ff5a5f] bg-[#141414] text-[#efece6]'
+                    : 'border-[#141414]/25 bg-[#efece6] text-[#141414] hover:border-[#141414]'
+                }`}
+              >
+                <Play className="w-3.5 h-3.5" />
+                <span>{activeLab === 'sandbox' ? 'Close Sandbox' : 'SQL Sandbox'}</span>
+              </button>
+
+              <button
+                type="button"
+                data-testid="explain-plan-toggle"
+                onClick={() => setActiveLab((prev) => (prev === 'explain-plan' ? 'none' : 'explain-plan'))}
+                className={`px-2.5 py-1.5 font-mono-label text-[10px] whitespace-nowrap shrink-0 border inline-flex items-center gap-1.5 transition-colors cursor-pointer ${
+                  activeLab === 'explain-plan'
+                    ? 'border-[#ff5a5f] bg-[#141414] text-[#efece6]'
+                    : 'border-[#141414]/25 bg-[#efece6] text-[#141414] hover:border-[#141414]'
+                }`}
+              >
+                <Layers className="w-3.5 h-3.5" />
+                <span>{activeLab === 'explain-plan' ? 'Close Plan' : 'Plan Explorer'}</span>
+              </button>
+
+              <button
+                type="button"
+                data-testid="translator-toggle"
+                onClick={() => setActiveLab((prev) => (prev === 'translator' ? 'none' : 'translator'))}
+                className={`px-2.5 py-1.5 font-mono-label text-[10px] whitespace-nowrap shrink-0 border inline-flex items-center gap-1.5 transition-colors cursor-pointer ${
+                  activeLab === 'translator'
+                    ? 'border-[#ff5a5f] bg-[#141414] text-[#efece6]'
+                    : 'border-[#141414]/25 bg-[#efece6] text-[#141414] hover:border-[#141414]'
+                }`}
+              >
+                <RotateCw className="w-3.5 h-3.5" />
+                <span>{activeLab === 'translator' ? 'Close Translator' : 'Translator'}</span>
+              </button>
+
+              <button
+                type="button"
+                data-testid="snippet-library-toggle"
+                onClick={() => setShowSnippetModal(true)}
+                className="px-2.5 py-1.5 font-mono-label text-[10px] whitespace-nowrap shrink-0 border border-[#141414]/25 bg-[#efece6] text-[#141414] hover:border-[#141414] inline-flex items-center gap-1.5 transition-colors cursor-pointer"
+              >
+                <Bookmark className="w-3.5 h-3.5" />
+                <span>Snippets &amp; Library</span>
+              </button>
             </div>
           </div>
 
@@ -1167,6 +1319,36 @@ export const NovaStudio: React.FC<NovaStudioProps> = ({
                   mode={mode}
                   loading={loading}
                   onRunDeepAi={(prompt, targetMode) => sendPrompt(prompt, targetMode)}
+                />
+              )}
+
+              {activeLab === 'sandbox' && (
+                <LiveSqlSandbox
+                  initialSql={sandboxSql}
+                  schemaContext={schemaContext}
+                  onSendToChat={(sql) => sendPrompt(sql, 'optimize')}
+                />
+              )}
+
+              {activeLab === 'explain-plan' && (
+                <ExplainPlanExplorer
+                  initialPlan={explainSql}
+                  schemaContext={schemaContext}
+                  onOptimizePlan={(planText: string) => {
+                    sendPrompt(`Please analyze this execution plan and optimize query indexes and structure:\n\n${planText}`, 'optimize');
+                  }}
+                />
+              )}
+
+              {activeLab === 'translator' && (
+                <MultiDialectTranslator
+                  initialSql={
+                    sandboxSql ||
+                    input ||
+                    (activeSession?.messages.filter((m) => !!m.payload?.primaryCode).pop()?.payload?.primaryCode ?? '')
+                  }
+                  initialFrom={dialect}
+                  onRunInSandbox={handleRunInSandbox}
                 />
               )}
 
@@ -1480,6 +1662,76 @@ export const NovaStudio: React.FC<NovaStudioProps> = ({
                     {selectedModel.badge}
                   </span>
                 </div>
+
+                {/* Recent Queries Controls */}
+                <div className="relative inline-flex items-center gap-1">
+                  <button
+                    type="button"
+                    title="Previous query (cycle)"
+                    disabled={recentQueries.length === 0}
+                    onClick={() => cycleRecent('prev')}
+                    className="px-1.5 py-0.5 border border-[#141414]/20 bg-[#efece6] hover:bg-[#141414] hover:text-[#efece6] disabled:opacity-30 font-mono-label text-[9.5px] inline-flex items-center gap-0.5 transition-colors cursor-pointer"
+                  >
+                    <ArrowUp className="w-2.5 h-2.5" />
+                    <span>Prev</span>
+                  </button>
+                  <button
+                    type="button"
+                    title="Next query (cycle)"
+                    disabled={recentQueries.length === 0}
+                    onClick={() => cycleRecent('next')}
+                    className="px-1.5 py-0.5 border border-[#141414]/20 bg-[#efece6] hover:bg-[#141414] hover:text-[#efece6] disabled:opacity-30 font-mono-label text-[9.5px] inline-flex items-center gap-0.5 transition-colors cursor-pointer"
+                  >
+                    <span>Next</span>
+                    <ArrowDown className="w-2.5 h-2.5" />
+                  </button>
+                  <button
+                    type="button"
+                    data-testid="recent-queries-dropdown-btn"
+                    onClick={() => setShowRecentDropdown((v) => !v)}
+                    className="px-2 py-0.5 border border-[#141414]/20 bg-[#efece6] hover:border-[#141414] font-mono-label text-[9.5px] inline-flex items-center gap-1 transition-colors cursor-pointer"
+                  >
+                    <History className="w-3 h-3 text-[#141414]/70" />
+                    <span>Recent ({recentQueries.length})</span>
+                  </button>
+
+                  {showRecentDropdown && (
+                    <div className="absolute right-0 bottom-full mb-1 w-80 max-h-60 overflow-y-auto bg-[#f6f4ef] border border-[#141414]/30 shadow-lg z-50 p-1 space-y-1">
+                      <div className="px-2 py-1 border-b border-[#141414]/15 flex items-center justify-between text-[10px] font-mono-label text-[#141414]/60">
+                        <span>Recent Session Queries ({recentQueries.length}/10)</span>
+                        <button
+                          type="button"
+                          onClick={() => setShowRecentDropdown(false)}
+                          className="hover:text-[#141414]"
+                        >
+                          <X className="w-3 h-3" />
+                        </button>
+                      </div>
+                      {recentQueries.length === 0 ? (
+                        <div className="px-3 py-4 text-center text-[11px] text-[#141414]/50">
+                          No recent queries cached yet.
+                        </div>
+                      ) : (
+                        recentQueries.map((item, idx) => (
+                          <button
+                            key={item.id}
+                            type="button"
+                            onClick={() => selectRecentQuery(item)}
+                            className="w-full text-left p-2 hover:bg-[#141414] hover:text-[#efece6] group text-[11px] transition-colors border border-transparent hover:border-[#141414] cursor-pointer"
+                          >
+                            <div className="font-mono text-[9.5px] text-[#141414]/50 group-hover:text-[#efece6]/60 flex items-center justify-between">
+                              <span>#{idx + 1} · {item.dialect ? item.dialect.toUpperCase() : 'SQL'}</span>
+                              <span>{new Date(item.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
+                            </div>
+                            <div className="font-mono text-[10.5px] truncate mt-0.5">
+                              {item.sql.replace(/\s+/g, ' ').slice(0, 50)}...
+                            </div>
+                          </button>
+                        ))
+                      )}
+                    </div>
+                  )}
+                </div>
               </div>
 
               <div className="flex items-end gap-2">
@@ -1491,6 +1743,7 @@ export const NovaStudio: React.FC<NovaStudioProps> = ({
                     id="nova-chat-input"
                     value={input}
                     dialect={dialect}
+                    schemaContext={schemaContext}
                     forceSqlMode={forceSqlMode}
                     onToggleForceSqlMode={() => setForceSqlMode((v) => !v)}
                     onChange={handleComposerChange}
@@ -1559,6 +1812,24 @@ export const NovaStudio: React.FC<NovaStudioProps> = ({
           </form>
         </main>
       </div>
+
+      <SnippetLibraryModal
+        isOpen={showSnippetModal}
+        onClose={() => setShowSnippetModal(false)}
+        currentCode={schemaContext || input}
+        currentDialect={dialect}
+        onLoadSnippet={(code: string, snipDialect?: SqlDialect) => {
+          setInput(code);
+          if (snipDialect) setDialect(snipDialect);
+          setForceSqlMode(true);
+          setShowSnippetModal(false);
+        }}
+        onCompareSnapshots={(_baseDdl: string, targetDdl: string) => {
+          setSchemaContext(targetDdl);
+          setActiveLab('schema-diff');
+          setShowSnippetModal(false);
+        }}
+      />
     </div>
   );
 };

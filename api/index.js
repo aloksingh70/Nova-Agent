@@ -575,31 +575,34 @@ async function callGemini(input, systemInstruction, fullPrompt) {
     throw new Error("GEMINI_API_KEY is not configured in environment variables.");
   }
   const ai = new GoogleGenAI({
-    apiKey,
-    httpOptions: { headers: { "User-Agent": "aistudio-build" } }
+    apiKey
   });
-  const defaultModel = (process.env.GEMINI_MODEL || "gemini-3.5-flash-lite").trim();
-  const candidateModels = [defaultModel, "gemini-3.5-flash-lite", "gemini-3.8-flash", "gemini-3.5-flash"].filter(
+  const requestedModel = input.modelId || process.env.GEMINI_MODEL || "gemini-3.5-flash-lite";
+  const candidateModels = [requestedModel, "gemini-3.5-flash-lite", "gemini-3.8-flash"].filter(
     (v, i, a) => a.indexOf(v) === i
   );
   let response = null;
   let lastError = null;
   for (const model of candidateModels) {
     try {
+      console.log(`[Gemini] Generating response with model: ${model}`);
       response = await ai.models.generateContent({
         model,
         contents: fullPrompt,
         config: {
           systemInstruction,
-          responseMimeType: "application/json",
-          responseSchema: RESPONSE_SCHEMA
+          responseMimeType: "application/json"
         }
       });
-      if (response?.text) break;
+      if (response?.text) {
+        console.log(`[Gemini] Success with model: ${model}`);
+        break;
+      }
     } catch (err) {
+      console.warn(`[Gemini] Failed with model ${model}:`, err?.message || err);
       lastError = err;
       const status = err?.status || err?.code;
-      if (status === 404 || status === 503 || String(err?.message).includes("is no longer available")) {
+      if (status === 404 || status === 503 || String(err?.message).includes("is no longer available") || String(err?.message).includes("high demand")) {
         continue;
       }
       throw err;

@@ -1,4 +1,5 @@
 import type { SqlDialect } from '../types/nova';
+import { parseSqlDdl } from './sqlDdlParser';
 
 export type SqlLintSeverity = 'error' | 'warning' | 'info';
 
@@ -185,7 +186,11 @@ const KEYWORD_TYPOS: { re: RegExp; fix: string; label: string }[] = [
  * Performs real-time SQL linting with exact character spans for inline squiggle highlights
  * and one-click Quick Fixes.
  */
-export function lintSqlLive(text: string, dialect: SqlDialect = 'postgresql'): SqlLintResult {
+export function lintSqlLive(
+  text: string,
+  dialect: SqlDialect = 'postgresql',
+  schemaContext?: string
+): SqlLintResult {
   const isSql = looksLikeSqlOrNoSql(text);
   if (!isSql) {
     return {
@@ -525,6 +530,34 @@ export function lintSqlLive(text: string, dialect: SqlDialect = 'postgresql'): S
         quickFix: { label: 'Replace with LIKE', replacement: 'LIKE' },
       });
     }
+  }
+
+  // 15. Schema-Aware Linting (SQL010): check table.column existence in active schema
+  if (schemaContext?.trim()) {
+    try {
+      const parsed = parseSqlDdl(schemaContext);
+      const tableMap: Record<string, Set<string>> = {};
+      for (const ent of parsed.diagram.entities) {
+        tableMap[ent.name.toLowerCase()] = new Set(ent.columns.map((c) => c.name.toLowerCase()));
+      }
+
+      const colRefRe = /\b([A-Za-z0-9_]+)\.([A-Za-z0-9_]+)\b/g;
+      while ((m = colRefRe.exec(masked)) !== null) {
+        const tbl = m[1].toLowerCase();
+        const col = m[2].toLowerCase();
+
+        if (tableMap[tbl] && !tableMap[tbl].has(col)) {
+          pushDiag({
+            code: 'SQL010',
+            severity: 'warning',
+            message: `Column "${m[1]}.${m[2]}" not found in active schema table "${m[1]}"`,
+            hint: `Available columns on "${m[1]}": ${Array.from(tableMap[tbl]).join(', ')}`,
+            start: m.index,
+            end: m.index + m[0].length,
+          });
+        }
+      }
+    } catch {}
   }
 
   diagnostics.sort((a, b) => a.start - b.start || (a.severity === 'error' ? -1 : 1));

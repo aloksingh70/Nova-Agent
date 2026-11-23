@@ -90,3 +90,13 @@ test('lintSqlLive catches JOIN without ON/USING (SQL008), duplicate keywords (SQ
   assert.equal(afterLint.errorCount, 0);
   assert.equal(afterLint.warningCount, 0);
 });
+
+test('lintSqlLive flags unknown column in active schema with SQL010', () => {
+  const schema = `CREATE TABLE orders (id UUID PRIMARY KEY, customer_id UUID NOT NULL);`;
+  const query = `SELECT orders.invalid_column FROM orders;`;
+  const res = lintSqlLive(query, 'postgresql', schema);
+
+  const sql010 = res.diagnostics.find((d) => d.code === 'SQL010');
+  assert.ok(sql010, 'Expected SQL010 diagnostic for unknown column');
+  assert.ok(sql010.message.includes('Column "orders.invalid_column" not found'));
+});
