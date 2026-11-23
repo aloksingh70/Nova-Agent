@@ -1038,7 +1038,7 @@ ${urls.map(
   return app;
 }
 
-// api/index.ts
+// server/vercelHandler.ts
 var appPromise = null;
 async function handler(req, res) {
   if (!appPromise) {
