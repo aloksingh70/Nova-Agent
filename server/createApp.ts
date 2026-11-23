@@ -4,7 +4,6 @@ dotenv.config();
 import crypto from 'node:crypto';
 import path from 'node:path';
 import express from 'express';
-import { createServer as createViteServer } from 'vite';
 import {
   NovaStore,
   parseCookieHeader,
@@ -574,6 +573,7 @@ ${urls
   // In serverless environments, static assets and SPA rewrites are served by Vercel CDN directly.
   if (!opts?.isServerless) {
     if (process.env.NODE_ENV !== 'production') {
+      const { createServer: createViteServer } = await import('vite');
       const vite = await createViteServer({
         server: { middlewareMode: true },
         appType: 'spa',

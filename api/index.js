@@ -3,7 +3,6 @@ import dotenv from "dotenv";
 import crypto3 from "node:crypto";
 import path2 from "node:path";
 import express from "express";
-import { createServer as createViteServer } from "vite";
 
 // server/authStore.ts
 import crypto from "node:crypto";
@@ -1022,6 +1021,7 @@ ${urls.map(
   });
   if (!opts?.isServerless) {
     if (process.env.NODE_ENV !== "production") {
+      const { createServer: createViteServer } = await import("vite");
       const vite = await createViteServer({
         server: { middlewareMode: true },
         appType: "spa"
