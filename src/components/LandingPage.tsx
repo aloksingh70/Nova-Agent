@@ -351,7 +351,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({
   };
 
   const shareUrl =
-    typeof window !== 'undefined' ? `${window.location.origin}/` : 'https://novaagent.app/';
+    typeof window !== 'undefined' ? `${window.location.origin}/` : 'https://nova-agent-sql-ai.vercel.app/';
   const shareText =
     'NOVA AGENT — Turn plain English into audited SQL queries, Mermaid.js ER diagrams, and schema debug insights.';
 
