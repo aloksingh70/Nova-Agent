@@ -1,0 +1,101 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>NOVA AGENT — AI SQL, ER Diagrams &amp; Query Debugger</title>
+    <meta
+      name="description"
+      content="Turn plain English into audited SQL queries, visualize DDL with Mermaid.js ER diagrams, optimize slow joins, and debug schemas with NOVA AGENT."
+    />
+    <meta name="robots" content="index, follow" />
+    <meta name="theme-color" content="#efece6" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link rel="apple-touch-icon" href="/favicon.svg" />
+    <link rel="canonical" href="https://novaagent.app/" />
+
+    <!-- OpenGraph Social Share Cards -->
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="NOVA AGENT" />
+    <meta property="og:title" content="NOVA AGENT — AI SQL, ER Diagrams &amp; Query Debugger" />
+    <meta
+      property="og:description"
+      content="Turn plain English into audited SQL queries, visualize DDL with Mermaid.js ER diagrams, optimize slow joins, and debug schemas with NOVA AGENT."
+    />
+    <meta property="og:image" content="/og-card.svg" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta property="og:image:alt" content="NOVA AGENT — Thinking Machines for AI SQL, ER Diagrams, and Schema Debugging" />
+
+    <!-- Twitter / X Social Card -->
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="NOVA AGENT — AI SQL, ER Diagrams &amp; Query Debugger" />
+    <meta
+      name="twitter:description"
+      content="Turn plain English into audited SQL queries, visualize DDL with Mermaid.js ER diagrams, optimize slow joins, and debug schemas with NOVA AGENT."
+    />
+    <meta name="twitter:image" content="/og-card.svg" />
+
+    <!-- Font Performance Preconnect -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@300;400;500;600&family=Schibsted+Grotesk:wght@400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
+
+    <!-- Schema.org Structured Data (WebApplication + FAQPage) -->
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@graph": [
+          {
+            "@type": "WebApplication",
+            "name": "NOVA AGENT",
+            "applicationCategory": "DeveloperApplication",
+            "operatingSystem": "All",
+            "description": "AI database and query intelligence workspace for Text-to-SQL, Mermaid.js SQL DDL ER diagrams, query optimization, and schema debugging.",
+            "offers": {
+              "@type": "Offer",
+              "price": "0",
+              "priceCurrency": "USD"
+            }
+          },
+          {
+            "@type": "FAQPage",
+            "mainEntity": [
+              {
+                "@type": "Question",
+                "name": "Which SQL and NoSQL database dialects does NOVA AGENT support?",
+                "acceptedAnswer": {
+                  "@type": "Answer",
+                  "text": "NOVA Studio supports PostgreSQL, MySQL 8, SQLite, SQL Server, BigQuery, and MongoDB aggregation pipelines."
+                }
+              },
+              {
+                "@type": "Question",
+                "name": "How does the SQL DDL ER Diagram Visualizer help debug schemas?",
+                "acceptedAnswer": {
+                  "@type": "Answer",
+                  "text": "Paste CREATE TABLE, ALTER TABLE, or CREATE INDEX statements into Schema ER Lab to parse entities, render an interactive Mermaid.js ER diagram, and catch missing primary keys, broken foreign keys, type mismatches, and unindexed FKs."
+                }
+              },
+              {
+                "@type": "Question",
+                "name": "How are my account credentials and chat history secured?",
+                "acceptedAnswer": {
+                  "@type": "Answer",
+                  "text": "Passwords are salted and hashed with scrypt using timing-safe verification on the backend, sessions use HMAC-SHA256 signed HttpOnly cookies, and analytics tracking is strictly opt-in."
+                }
+              }
+            ]
+          }
+        ]
+      }
+    </script>
+  </head>
+  <body class="bg-[#efece6] text-[#141414] antialiased selection:bg-[#ff5a5f]/20 selection:text-[#141414]">
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>

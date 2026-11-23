@@ -1,0 +1,6 @@
+{
+  "name": "NOVA AGENT — AI Database & Query Intelligence",
+  "description": "Thinking machines for data architecture: convert plain text to SQL/NoSQL queries, generate interactive ER diagrams, optimize slow queries, and debug schemas with Gemini.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

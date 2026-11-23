@@ -1,0 +1,102 @@
+{
+  "users": [
+    {
+      "id": "usr_c5d52d69-e",
+      "name": "Elena Vance",
+      "email": "verify_1795355103875@nova.dev",
+      "role": "Data Engineer",
+      "createdAt": "2026-11-22T13:45:03.966Z",
+      "passwordHash": "9c439ff27b54326ddf7dda28289ee144:bf35046be3c94fa53e3f02a7c31bee04db8708634816ccf967b9f82278a16d05b536f2165c2d27a32e3f155070bfe258b5626be75395166633a2b8d5fe3b1133"
+    },
+    {
+      "id": "usr_b98b1abf-d",
+      "name": "Devon Cole",
+      "email": "architect_1795359590347@nova.io",
+      "role": "Data Engineer",
+      "createdAt": "2026-11-22T14:59:50.584Z",
+      "passwordHash": "049806a0ed1336825e7add904c998c3f:2502f3f46b87bbea851425ba5eff1ef16e8ab0558e2053595814df719419fa40bd10b986f85e888044cb9f9c90764f985c674d3e501c784961f6acfe0245a885"
+    },
+    {
+      "id": "usr_79cce63b-8",
+      "name": "Elena Vance",
+      "email": "nova-e2e-1795367427833@example.com",
+      "role": "Data Engineer",
+      "createdAt": "2026-11-22T17:10:27.946Z",
+      "passwordHash": "d78281998af58e3886d126ec9e853d18:fb8f50fdb653364b3bd6b9d1aded38b284430da937a82e114ec055477a8657c4da1e2ed38ee07debfc0645da76648f6848f3a236b593d9829b098e8669df646a"
+    },
+    {
+      "id": "usr_215ac356-b",
+      "name": "Elena Vance",
+      "email": "nova-e2e-1795367662900@example.com",
+      "role": "Data Engineer",
+      "createdAt": "2026-11-22T17:14:23.002Z",
+      "passwordHash": "16e75500a4b09be8e8fe1f038c8de73f:8bb61b1b12563805c361faed9d2ebb14926f118218e3c5fb97d1dec849d01529771847718f0ff9143d2015ba03fcb1dd813e03428742bbd87f1f6c6510feb0db"
+    },
+    {
+      "id": "usr_f7f1875b-b",
+      "name": "Samira Chen",
+      "email": "queue-ctx-1795371013931@example.com",
+      "role": "Data Engineer",
+      "createdAt": "2026-11-22T18:10:14.047Z",
+      "passwordHash": "863382288d607047e0dfa8c2ead7587a:72f5f4fc235dc494598f3e5c9d3684648c8cf73e7ea0a69e6a1e8fbf71b47a56f361e763333eed05b0a1d47390c2d611e03bdcd88a371983670a2d61ed8c1d27"
+    },
+    {
+      "id": "usr_c4826fb4-9",
+      "name": "Alok Singh",
+      "email": "alok.browser.test.1795430508197@nova.dev",
+      "role": "Data Engineer",
+      "createdAt": "2026-11-23T10:41:48.223Z",
+      "passwordHash": "604a356c684f25232c5b087396401307:25e5c1cb5b63fe2f71038a9a4322035a763fc276fd9b96789fb8b7b9128cb089a0056af4b7a28f694c5e627a09cbd34f776e036bc18bac720896332f48454656"
+    },
+    {
+      "id": "usr_8cc54caa-0",
+      "name": "Alok Singh",
+      "email": "alok.test.1795430676977@nova.dev",
+      "role": "Data Engineer",
+      "createdAt": "2026-11-23T10:44:36.998Z",
+      "passwordHash": "5219a5256c054d9d1a3b75f8a1985b77:d02cbde36ef265f40806e73971c461dc438b16070462ff86708f9a5233dc6b0d66ea90f53a62c7f7865d62bc24191363c3747b2fd75352f43a24aca9c2c15b7c"
+    }
+  ],
+  "sessionsByUser": {
+    "usr_c5d52d69-e": [],
+    "usr_b98b1abf-d": [],
+    "usr_79cce63b-8": [],
+    "usr_215ac356-b": [],
+    "usr_f7f1875b-b": [],
+    "usr_c4826fb4-9": [],
+    "usr_8cc54caa-0": [
+      {
+        "id": "ses_d8624e74-4",
+        "title": "Find top 5 customers by total order spend…",
+        "mode": "text-to-query",
+        "dialect": "postgresql",
+        "schemaContext": "",
+        "messages": [
+          {
+            "id": "msg_b03d3587-4",
+            "role": "user",
+            "mode": "text-to-query",
+            "dialect": "postgresql",
+            "content": "Find top 5 customers by total order spend in 2026",
+            "createdAt": "2026-11-23T10:44:39.824Z"
+          },
+          {
+            "id": "msg_2bdea4a9-d",
+            "role": "assistant",
+            "mode": "text-to-query",
+            "dialect": "postgresql",
+            "content": "Calculates the top 5 customers for the year 2026 by aggregating total order spend using a standard join and GROUP BY clause in PostgreSQL.",
+            "payload": {
+              "summary": "Calculates the top 5 customers for the year 2026 by aggregating total order spend using a standard join and GROUP BY clause in PostgreSQL.",
+              "codeLanguage": "sql",
+              "primaryCode": "SELECT c.customer_id, c.customer_name, SUM(o.total_amount) AS total_spend FROM customers c JOIN orders o ON c.customer_id = o.customer_id WHERE o.order_date >= '2026-01-01' AND o.order_date < '2027-01-01' GROUP BY c.customer_id, c.customer_name ORDER BY total_spend DESC LIMIT 5;\n\nExplanation Steps:\n1. FROM and JOIN: Connects the `customers` table with the `orders` table using the primary/foreign key `customer_id`.\n2. WHERE: Filters the `orders` table to strictly include records falling within the calendar year 2026, preserving SARGable query execution.\n3. GROUP BY: Groups the result set by customer attributes to prepare for aggregate calculations.\n4. SELECT and SUM: Computes the aggregate sum of `total_amount` for each customer aliased as `total_spend`.\n5. ORDER BY and LIMIT: Sorts the aggregated results in descending order by `total_spend` and restricts the output to the top 5 records.\n\nOptimization Tips:\n- Ensure an index exists on `orders(order_date)` and `orders(customer_id)` to speed up the join and date filtering process.\n- Consider creating a covering index if table bloat is an issue during heavy scans.\n\nFollow-up Suggestions:\n- Would you like to include customer contact details in the SELECT output?\n- Do you need to handle ties by using RANK() or DENSE_RANK() window functions instead of a standard LIMIT clause?"
+            },
+            "createdAt": "2026-11-23T10:44:39.824Z"
+          }
+        ],
+        "createdAt": "2026-11-23T10:44:39.824Z",
+        "updatedAt": "2026-11-23T10:44:39.827Z"
+      }
+    ]
+  }
+}

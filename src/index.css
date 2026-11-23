@@ -1,0 +1,261 @@
+@import "tailwindcss";
+
+@theme {
+  --font-sans: "Schibsted Grotesk", -apple-system, BlinkMacSystemFont, sans-serif;
+  --font-mono: "IBM Plex Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
+}
+
+:root {
+  --paper: #efece6;
+  --paper-elevated: #f6f4ef;
+  --paper-panel: rgba(239, 236, 230, 0.94);
+  --ink: #141414;
+  --ink-dim: rgba(20, 20, 20, 0.56);
+  --ink-faint: rgba(20, 20, 20, 0.16);
+  --grid-line: rgba(20, 20, 20, 0.09);
+  --hairline: rgba(20, 20, 20, 0.16);
+  --col: 17%;
+  --brand-conic: conic-gradient(
+    from 200deg,
+    #ffb347,
+    #ff8a3d 18%,
+    #ff5a5f 34%,
+    #ff3d8b 50%,
+    #ff5a5f 66%,
+    #ff8a3d 82%,
+    #ffb347
+  );
+  --brand-linear-1: linear-gradient(125deg, #ff8a3d 0%, #ff5a5f 52%, #ff3d8b 100%);
+  --brand-linear-2: linear-gradient(125deg, #ffb347 0%, #ff8a3d 45%, #ff3d8b 100%);
+}
+
+html {
+  scroll-behavior: smooth;
+  background-color: var(--paper);
+  color: var(--ink);
+  font-family: var(--font-sans);
+}
+
+body {
+  margin: 0;
+  background-color: var(--paper);
+  color: var(--ink);
+  overflow-x: hidden;
+}
+
+a:focus-visible,
+button:focus-visible,
+input:focus-visible,
+textarea:focus-visible,
+select:focus-visible {
+  outline: 2px solid #ff5a5f;
+  outline-offset: 2px;
+}
+
+.font-mono-label {
+  font-family: var(--font-mono);
+  text-transform: uppercase;
+  letter-spacing: 0.055em;
+}
+
+/* Brand gradient outline buttons (partial top + left clip-path border) */
+.nova-launch-btn {
+  position: relative;
+  border: 1px solid rgba(20, 20, 20, 0.24);
+  background: rgba(239, 236, 230, 0.92);
+  transition: background-color 180ms cubic-bezier(0.16, 1, 0.3, 1),
+    border-color 180ms cubic-bezier(0.16, 1, 0.3, 1),
+    transform 180ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.nova-launch-btn::before {
+  content: "";
+  position: absolute;
+  inset: -1px;
+  padding: 1.5px;
+  background: var(--brand-linear-1);
+  clip-path: polygon(0 0, 58% 0, 58% 12%, 4px 12%, 4px 100%, 0 100%);
+  -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  pointer-events: none;
+}
+
+.nova-launch-btn:hover {
+  background: #141414;
+  color: #efece6;
+  border-color: #141414;
+}
+
+/* Headline gradient border boxes */
+.headline-box-thinking {
+  position: relative;
+  display: inline-block;
+  padding: 0.04em 0.36em 0.1em 0.22em;
+  border: 2px solid transparent;
+  background: linear-gradient(var(--paper-box-bg, #efece6), var(--paper-box-bg, #efece6))
+      padding-box,
+    var(--brand-linear-1) border-box;
+  clip-path: polygon(0 0, 100% 0, 100% calc(100% - 22px), calc(100% - 22px) 100%, 0 100%);
+}
+
+.headline-box-thinking::after {
+  content: "";
+  position: absolute;
+  right: -5px;
+  bottom: 9px;
+  width: 32px;
+  height: 2px;
+  background: #ff3d8b;
+  transform: rotate(-45deg);
+  transform-origin: center;
+  pointer-events: none;
+}
+
+.headline-box-machines {
+  display: inline-block;
+  padding: 0.04em 0.28em 0.1em 0.22em;
+  border: 2px solid transparent;
+  background: linear-gradient(var(--paper-box-bg, #efece6), var(--paper-box-bg, #efece6))
+      padding-box,
+    var(--brand-linear-2) border-box;
+}
+
+@media (max-width: 900px) {
+  :root {
+    --paper-box-bg: rgba(239, 236, 230, 0.92);
+  }
+}
+
+/* Corner brackets */
+.corner-brackets {
+  position: relative;
+}
+
+.corner-brackets > .cb-tl,
+.corner-brackets > .cb-tr,
+.corner-brackets > .cb-bl,
+.corner-brackets > .cb-br {
+  position: absolute;
+  width: 7px;
+  height: 7px;
+  pointer-events: none;
+  border-color: rgba(20, 20, 20, 0.45);
+}
+
+.corner-brackets > .cb-tl {
+  top: -5px;
+  left: -5px;
+  border-top: 1px solid;
+  border-left: 1px solid;
+  border-top-left-radius: 2px;
+}
+
+.corner-brackets > .cb-tr {
+  top: -5px;
+  right: -5px;
+  border-top: 1px solid;
+  border-right: 1px solid;
+  border-top-right-radius: 2px;
+}
+
+.corner-brackets > .cb-bl {
+  bottom: -5px;
+  left: -5px;
+  border-bottom: 1px solid;
+  border-left: 1px solid;
+  border-bottom-left-radius: 2px;
+}
+
+.corner-brackets > .cb-br {
+  bottom: -5px;
+  right: -5px;
+  border-bottom: 1px solid;
+  border-right: 1px solid;
+  border-bottom-right-radius: 2px;
+}
+
+/* Caret blink */
+@keyframes caret-blink {
+  0%,
+  49% {
+    opacity: 1;
+  }
+  50%,
+  100% {
+    opacity: 0;
+  }
+}
+
+.animate-caret {
+  animation: caret-blink 0.95s steps(1) infinite;
+}
+
+/* Scroll arrow bob */
+@keyframes bob-down {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(4px);
+  }
+}
+
+.animate-bob {
+  animation: bob-down 2s ease-in-out infinite;
+}
+
+/* Reveal utility */
+.rv {
+  opacity: 0;
+  transform: translateY(26px);
+  transition: opacity 0.9s cubic-bezier(0.2, 0.7, 0.2, 1),
+    transform 0.9s cubic-bezier(0.2, 0.7, 0.2, 1);
+}
+
+.rv.rv-in {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.rv-d1 {
+  transition-delay: 0.1s;
+}
+.rv-d2 {
+  transition-delay: 0.2s;
+}
+.rv-d3 {
+  transition-delay: 0.3s;
+}
+.rv-d4 {
+  transition-delay: 0.4s;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .rv {
+    opacity: 1;
+    transform: none;
+    transition: none;
+  }
+  .animate-bob,
+  .animate-caret {
+    animation: none;
+  }
+}
+
+/* Subtle custom scrollbars for Studio panels */
+.nova-scroll::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+.nova-scroll::-webkit-scrollbar-track {
+  background: transparent;
+}
+.nova-scroll::-webkit-scrollbar-thumb {
+  background: rgba(20, 20, 20, 0.16);
+  border-radius: 3px;
+}
+.nova-scroll::-webkit-scrollbar-thumb:hover {
+  background: rgba(20, 20, 20, 0.3);
+}
