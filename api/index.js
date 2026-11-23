@@ -361,27 +361,55 @@ function buildSessionCookieHeader(cookieName, token, opts) {
   return attrs.join("; ");
 }
 
-// server/geminiService.ts
+// server/aiService.ts
 import { GoogleGenAI, Type } from "@google/genai";
-var DEFAULT_MODEL = (process.env.GEMINI_MODEL || "gemini-3.5-flash-lite").trim();
-var FALLBACK_MODES = [DEFAULT_MODEL, "gemini-3.5-flash-lite", "gemini-3.8-flash", "gemini-3.5-flash"].filter(
-  (v, i, a) => a.indexOf(v) === i
-);
-function getGeminiClient() {
-  const apiKey = (process.env.GEMINI_API_KEY || "").trim();
-  if (!apiKey || apiKey === "MY_GEMINI_API_KEY") {
-    throw new Error(
-      "GEMINI_API_KEY is not configured. Open Settings > Secrets to attach a Gemini API key."
-    );
-  }
-  return new GoogleGenAI({
-    apiKey,
-    httpOptions: {
-      headers: {
-        "User-Agent": "aistudio-build"
-      }
+function listSupportedModels() {
+  const hasGemini = Boolean(process.env.GEMINI_API_KEY && process.env.GEMINI_API_KEY !== "MY_GEMINI_API_KEY");
+  const hasDeepseek = Boolean(process.env.DEEPSEEK_API_KEY);
+  const hasOpenai = Boolean(process.env.OPENAI_API_KEY);
+  const hasAnthropic = Boolean(process.env.ANTHROPIC_API_KEY);
+  return [
+    {
+      id: "gemini-3.5-flash-lite",
+      provider: "gemini",
+      name: "Gemini 3.5 Flash",
+      providerName: "Google Gemini",
+      badge: "Active \xB7 Ready",
+      logo: "/models/gemini.png",
+      status: hasGemini ? "active" : "unconfigured",
+      description: "Ultra-fast multimodal SQL generation and schema reasoning (Google)"
+    },
+    {
+      id: "deepseek-chat",
+      provider: "deepseek",
+      name: "DeepSeek V3",
+      providerName: "DeepSeek",
+      badge: "Key Added \xB7 Needs Credits",
+      logo: "/models/deepseek.png",
+      status: hasDeepseek ? "quota_needed" : "unconfigured",
+      description: "High-capability code & database architecture synthesis (DeepSeek)"
+    },
+    {
+      id: "gpt-4o-mini",
+      provider: "openai",
+      name: "GPT-4o Mini",
+      providerName: "OpenAI",
+      badge: "Key Added \xB7 Needs Credits",
+      logo: "/models/openai.png",
+      status: hasOpenai ? "quota_needed" : "unconfigured",
+      description: "Advanced logical reasoning and query optimization (OpenAI)"
+    },
+    {
+      id: "claude-3-5-sonnet",
+      provider: "anthropic",
+      name: "Claude 3.5 Sonnet",
+      providerName: "Anthropic",
+      badge: "Key Added \xB7 Needs Credits",
+      logo: "/models/claude.png",
+      status: hasAnthropic ? "quota_needed" : "unconfigured",
+      description: "Nuanced SQL DDL design and architectural analysis (Anthropic)"
     }
-  });
+  ];
 }
 function buildSystemInstruction(mode, dialect, schemaContext) {
   const dialectLabel = dialect.toUpperCase();
@@ -402,7 +430,7 @@ ${schemaContext.trim()}` : "";
     "You are NOVA AGENT, a senior database architect and SQL/NoSQL query intelligence engine.",
     `Target database dialect: ${dialectLabel}.`,
     modeGuidance[mode],
-    "Keep responses concise, technically rigorous, and directly usable in production. You may use clean Markdown in summary, optimizationTips, debugIssues, and explanationSteps (such as inline `table.column` code, bullet lists, and compact Markdown comparison tables when comparing schemas, indexes, or query clauses). Always include 2 short followUpSuggestions relevant to the next engineering step.",
+    'Keep responses concise, technically rigorous, and directly usable in production. You may use clean Markdown in summary, optimizationTips, debugIssues, and explanationSteps. Output strictly valid JSON matching the schema: {"summary": string, "primaryCode": string, "codeLanguage": string, "originalCode": string, "explanationSteps": string[], "optimizationTips": [{"title": string, "impact": string, "detail": string}], "indexRecommendations": string[], "debugIssues": [{"lineOrClause": string, "severity": string, "issue": string, "fix": string}], "erDiagram": {"title": string, "entities": [], "relationships": []}, "followUpSuggestions": string[]}.',
     schemaSection
   ].join("\n");
 }
@@ -519,30 +547,55 @@ var RESPONSE_SCHEMA = {
   },
   required: ["summary"]
 };
-async function generateNovaResponse(input) {
-  const ai = getGeminiClient();
-  const historyLines = (input.history ?? []).slice(-6).map((m) => `${m.role === "user" ? "User" : "NOVA"}: ${m.content}`).join("\n");
-  const fullPrompt = historyLines ? `Recent conversation context:
-${historyLines}
-
-Current request:
-${input.prompt}` : input.prompt;
+function parseAssistantJson(rawText) {
+  const cleaned = (rawText || "").trim();
+  if (!cleaned) {
+    throw new Error("AI engine returned an empty response. Please try again.");
+  }
+  let parsed;
+  try {
+    parsed = JSON.parse(cleaned);
+  } catch {
+    const unquoted = cleaned.replace(/^```json\s*/i, "").replace(/^```\s*/i, "").replace(/```\s*$/, "").trim();
+    parsed = JSON.parse(unquoted);
+  }
+  if (parsed.erDiagram?.relationships) {
+    const validCards = /* @__PURE__ */ new Set(["1:1", "1:N", "N:1", "N:M"]);
+    parsed.erDiagram.relationships = parsed.erDiagram.relationships.map((r, i) => ({
+      ...r,
+      id: r.id || `rel_${i + 1}`,
+      cardinality: validCards.has(r.cardinality) ? r.cardinality : "1:N"
+    }));
+  }
+  return parsed;
+}
+async function callGemini(input, systemInstruction, fullPrompt) {
+  const apiKey = (process.env.GEMINI_API_KEY || "").trim();
+  if (!apiKey || apiKey === "MY_GEMINI_API_KEY") {
+    throw new Error("GEMINI_API_KEY is not configured in environment variables.");
+  }
+  const ai = new GoogleGenAI({
+    apiKey,
+    httpOptions: { headers: { "User-Agent": "aistudio-build" } }
+  });
+  const defaultModel = (process.env.GEMINI_MODEL || "gemini-3.5-flash-lite").trim();
+  const candidateModels = [defaultModel, "gemini-3.5-flash-lite", "gemini-3.8-flash", "gemini-3.5-flash"].filter(
+    (v, i, a) => a.indexOf(v) === i
+  );
   let response = null;
   let lastError = null;
-  for (const model of FALLBACK_MODES) {
+  for (const model of candidateModels) {
     try {
       response = await ai.models.generateContent({
         model,
         contents: fullPrompt,
         config: {
-          systemInstruction: buildSystemInstruction(input.mode, input.dialect, input.schemaContext),
+          systemInstruction,
           responseMimeType: "application/json",
           responseSchema: RESPONSE_SCHEMA
         }
       });
-      if (response?.text) {
-        break;
-      }
+      if (response?.text) break;
     } catch (err) {
       lastError = err;
       const status = err?.status || err?.code;
@@ -555,26 +608,125 @@ ${input.prompt}` : input.prompt;
   if (!response?.text) {
     throw lastError || new Error("Gemini returned an empty response. Please try again.");
   }
-  const rawText = (response.text ?? "").trim();
-  if (!rawText) {
-    throw new Error("Gemini returned an empty response. Please try again.");
+  return parseAssistantJson(response.text);
+}
+async function callDeepSeek(systemInstruction, fullPrompt) {
+  const apiKey = (process.env.DEEPSEEK_API_KEY || "").trim();
+  if (!apiKey) {
+    throw new Error("DEEPSEEK_API_KEY is not configured in environment variables.");
   }
-  let parsed;
-  try {
-    parsed = JSON.parse(rawText);
-  } catch {
-    const cleaned = rawText.replace(/^```json\s*/i, "").replace(/```\s*$/, "").trim();
-    parsed = JSON.parse(cleaned);
+  const res = await fetch("https://api.deepseek.com/chat/completions", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${apiKey}`
+    },
+    body: JSON.stringify({
+      model: "deepseek-chat",
+      messages: [
+        { role: "system", content: `${systemInstruction}
+
+IMPORTANT: Respond with pure JSON only, without markdown backticks.` },
+        { role: "user", content: fullPrompt }
+      ],
+      response_format: { type: "json_object" },
+      max_tokens: 4096
+    })
+  });
+  const data = await res.json();
+  if (!res.ok) {
+    if (res.status === 402 || data?.error?.message?.includes("Insufficient Balance")) {
+      throw new Error("DeepSeek API: Insufficient Balance. Your account requires credit balance to run queries. Please top up at https://platform.deepseek.com or switch to Google Gemini (Active).");
+    }
+    throw new Error(data?.error?.message || `DeepSeek API error (HTTP ${res.status}).`);
   }
-  if (parsed.erDiagram?.relationships) {
-    const validCards = /* @__PURE__ */ new Set(["1:1", "1:N", "N:1", "N:M"]);
-    parsed.erDiagram.relationships = parsed.erDiagram.relationships.map((r, i) => ({
-      ...r,
-      id: r.id || `rel_${i + 1}`,
-      cardinality: validCards.has(r.cardinality) ? r.cardinality : "1:N"
-    }));
+  const content = data?.choices?.[0]?.message?.content || "";
+  return parseAssistantJson(content);
+}
+async function callOpenAI(systemInstruction, fullPrompt) {
+  const apiKey = (process.env.OPENAI_API_KEY || "").trim();
+  if (!apiKey) {
+    throw new Error("OPENAI_API_KEY is not configured in environment variables.");
   }
-  return parsed;
+  const res = await fetch("https://api.openai.com/v1/chat/completions", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${apiKey}`
+    },
+    body: JSON.stringify({
+      model: "gpt-4o-mini",
+      messages: [
+        { role: "system", content: `${systemInstruction}
+
+IMPORTANT: Respond with pure JSON only, without markdown backticks.` },
+        { role: "user", content: fullPrompt }
+      ],
+      response_format: { type: "json_object" },
+      max_tokens: 4096
+    })
+  });
+  const data = await res.json();
+  if (!res.ok) {
+    if (res.status === 429 || data?.error?.code === "insufficient_quota" || data?.error?.message?.includes("credits")) {
+      throw new Error("OpenAI API: Insufficient Quota. Your OpenAI API key has no credits remaining. Please top up at https://platform.openai.com/settings/organization/billing or switch to Google Gemini (Active).");
+    }
+    throw new Error(data?.error?.message || `OpenAI API error (HTTP ${res.status}).`);
+  }
+  const content = data?.choices?.[0]?.message?.content || "";
+  return parseAssistantJson(content);
+}
+async function callAnthropic(systemInstruction, fullPrompt) {
+  const apiKey = (process.env.ANTHROPIC_API_KEY || "").trim();
+  if (!apiKey) {
+    throw new Error("ANTHROPIC_API_KEY is not configured in environment variables.");
+  }
+  const res = await fetch("https://api.anthropic.com/v1/messages", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      "x-api-key": apiKey,
+      "anthropic-version": "2023-06-01"
+    },
+    body: JSON.stringify({
+      model: "claude-3-5-sonnet-20241022",
+      max_tokens: 4096,
+      system: `${systemInstruction}
+
+IMPORTANT: Output strictly valid JSON with no markdown wrapping or backticks.`,
+      messages: [{ role: "user", content: fullPrompt }]
+    })
+  });
+  const data = await res.json();
+  if (!res.ok) {
+    if (res.status === 400 && data?.error?.message?.includes("balance is too low")) {
+      throw new Error("Anthropic Claude API: Credit balance too low. Please add credits at https://console.anthropic.com/settings/plans or switch to Google Gemini (Active).");
+    }
+    throw new Error(data?.error?.message || `Anthropic API error (HTTP ${res.status}).`);
+  }
+  const content = data?.content?.[0]?.text || "";
+  return parseAssistantJson(content);
+}
+async function generateNovaResponse(input) {
+  const systemInstruction = buildSystemInstruction(input.mode, input.dialect, input.schemaContext);
+  const historyLines = (input.history ?? []).slice(-6).map((m) => `${m.role === "user" ? "User" : "NOVA"}: ${m.content}`).join("\n");
+  const fullPrompt = historyLines ? `Recent conversation context:
+${historyLines}
+
+Current request:
+${input.prompt}` : input.prompt;
+  const provider = input.provider || "gemini";
+  switch (provider) {
+    case "deepseek":
+      return await callDeepSeek(systemInstruction, fullPrompt);
+    case "openai":
+      return await callOpenAI(systemInstruction, fullPrompt);
+    case "anthropic":
+      return await callAnthropic(systemInstruction, fullPrompt);
+    case "gemini":
+    default:
+      return await callGemini(input, systemInstruction, fullPrompt);
+  }
 }
 
 // server/createApp.ts
@@ -634,6 +786,9 @@ async function createApp(opts) {
   app.use(express.json({ limit: "2mb" }));
   app.get("/api/health", (_req, res) => {
     res.json({ ok: true });
+  });
+  app.get("/api/models", (_req, res) => {
+    res.json({ models: listSupportedModels() });
   });
   app.get("/robots.txt", (req, res) => {
     const origin = (process.env.APP_URL || `${req.protocol}://${req.get("host")}`).replace(/\/$/, "");
@@ -960,6 +1115,8 @@ ${urls.map(
     const schemaContext = typeof req.body?.schemaContext === "string" ? req.body.schemaContext : "";
     const sessionId = typeof req.body?.sessionId === "string" ? req.body.sessionId : void 0;
     const history = Array.isArray(req.body?.history) ? req.body.history : [];
+    const provider = req.body?.provider;
+    const modelId = typeof req.body?.modelId === "string" ? req.body.modelId : void 0;
     if (!prompt) {
       res.status(400).json({ error: "Please enter a query, schema description, or question." });
       return;
@@ -970,7 +1127,9 @@ ${urls.map(
         mode,
         dialect,
         schemaContext,
-        history
+        history,
+        provider,
+        modelId
       });
       const now = (/* @__PURE__ */ new Date()).toISOString();
       const userMessage = {

@@ -20,7 +20,8 @@ import {
   signOAuthState,
   verifyOAuthState,
 } from './oauthProviders';
-import { generateNovaResponse } from './geminiService';
+import { generateNovaResponse, listSupportedModels } from './aiService';
+import type { SupportedAiProvider } from './aiService';
 import type { ChatMessage, NovaMode, SqlDialect } from '../src/types/nova';
 
 const SESSION_COOKIE = 'nova_session';
@@ -94,6 +95,11 @@ export async function createApp(opts?: { isServerless?: boolean }): Promise<expr
   // Health check
   app.get('/api/health', (_req, res) => {
     res.json({ ok: true });
+  });
+
+  // Supported AI Models & Providers
+  app.get('/api/models', (_req, res) => {
+    res.json({ models: listSupportedModels() });
   });
 
   // SEO: dynamic robots.txt
@@ -498,6 +504,8 @@ ${urls
       typeof req.body?.schemaContext === 'string' ? req.body.schemaContext : '';
     const sessionId = typeof req.body?.sessionId === 'string' ? req.body.sessionId : undefined;
     const history = Array.isArray(req.body?.history) ? req.body.history : [];
+    const provider = req.body?.provider as SupportedAiProvider | undefined;
+    const modelId = typeof req.body?.modelId === 'string' ? req.body.modelId : undefined;
 
     if (!prompt) {
       res.status(400).json({ error: 'Please enter a query, schema description, or question.' });
@@ -511,6 +519,8 @@ ${urls
         dialect,
         schemaContext,
         history,
+        provider,
+        modelId,
       });
 
       const now = new Date().toISOString();

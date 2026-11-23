@@ -112,3 +112,17 @@ export interface ModeMeta {
   placeholder: string;
   samplePrompts: string[];
 }
+
+export type AiProvider = 'gemini' | 'deepseek' | 'openai' | 'anthropic';
+
+export interface AiModelMeta {
+  id: string;
+  provider: AiProvider;
+  name: string;
+  providerName: string;
+  badge: string;
+  logo: string;
+  status: 'active' | 'quota_needed' | 'unconfigured';
+  description: string;
+}
+

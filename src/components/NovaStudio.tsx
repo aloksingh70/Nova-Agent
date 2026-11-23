@@ -27,7 +27,7 @@ import {
   Wrench,
   X,
 } from 'lucide-react';
-import type { AuthUser, ChatMessage, ChatSession, NovaMode, SqlDialect } from '../types/nova';
+import type { AiModelMeta, AuthUser, ChatMessage, ChatSession, NovaMode, SqlDialect } from '../types/nova';
 import {
   createQueuedMessage,
   enqueueMessage,
@@ -51,6 +51,7 @@ import { QueryDiagnosticsPanel } from './QueryDiagnosticsPanel';
 import { SchemaERVisualizer } from './SchemaERVisualizer';
 import { SqlCodeBlock } from './SqlCodeBlock';
 import { SqlLintEditor } from './SqlLintEditor';
+import { ModelSelector, DEFAULT_MODELS, DEFAULT_ACTIVE_MODEL } from './ModelSelector';
 
 interface NovaStudioProps {
   user: AuthUser | null;
@@ -118,6 +119,44 @@ export const NovaStudio: React.FC<NovaStudioProps> = ({
   const [queuePaused, setQueuePaused] = useState(false);
   const [editingQueueId, setEditingQueueId] = useState<string | null>(null);
   const [editingQueuePrompt, setEditingQueuePrompt] = useState('');
+
+  // AI Model selector state & persistence
+  const [models, setModels] = useState<AiModelMeta[]>(DEFAULT_MODELS);
+  const [selectedModel, setSelectedModel] = useState<AiModelMeta>(() => {
+    try {
+      const saved = localStorage.getItem('nova_selected_model');
+      if (saved) {
+        const found = DEFAULT_MODELS.find((m) => m.id === saved || m.provider === saved);
+        if (found) return found;
+      }
+    } catch {}
+    return DEFAULT_ACTIVE_MODEL;
+  });
+
+  useEffect(() => {
+    let isMounted = true;
+    fetch('/api/models')
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data) => {
+        if (!isMounted || !data?.models || !Array.isArray(data.models)) return;
+        setModels(data.models);
+        setSelectedModel((curr) => {
+          const match = data.models.find((m: AiModelMeta) => m.id === curr.id);
+          return match || curr;
+        });
+      })
+      .catch(() => {});
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+
+  const handleSelectModel = (m: AiModelMeta) => {
+    setSelectedModel(m);
+    try {
+      localStorage.setItem('nova_selected_model', m.id);
+    } catch {}
+  };
 
   // Chat history search, inline rename & inline delete confirmation
   const [historyQuery, setHistoryQuery] = useState('');
@@ -227,6 +266,8 @@ export const NovaStudio: React.FC<NovaStudioProps> = ({
                 ? currentSession.id
                 : undefined,
             history,
+            provider: selectedModel.provider,
+            modelId: selectedModel.id,
           }),
         });
 
@@ -614,8 +655,14 @@ export const NovaStudio: React.FC<NovaStudioProps> = ({
           </button>
         </div>
 
-        {/* Right Controls: Dialect, Schema Context, Account */}
+        {/* Right Controls: Model, Dialect, Schema Context, Account */}
         <div className="flex items-center gap-2.5 shrink-0">
+          <ModelSelector
+            value={selectedModel}
+            onChange={handleSelectModel}
+            models={models}
+          />
+
           <label htmlFor="studio-dialect" className="sr-only">
             SQL Dialect
           </label>
@@ -1415,6 +1462,25 @@ export const NovaStudio: React.FC<NovaStudioProps> = ({
                   </div>
                 </div>
               )}
+
+              <div className="flex items-center justify-between px-1 text-[11px] text-[#141414]/70">
+                <div className="inline-flex items-center gap-1.5 font-mono text-[10.5px]">
+                  <span className="text-[#141414]/50">Engine:</span>
+                  <span className="inline-flex items-center gap-1 px-1.5 py-0.5 border border-[#141414]/20 bg-[#efece6] text-[#141414]">
+                    <img src={selectedModel.logo} alt={selectedModel.name} className="w-3.5 h-3.5 object-contain" />
+                    <span className="font-semibold">{selectedModel.name}</span>
+                  </span>
+                  <span
+                    className={`px-1.5 py-0.5 text-[9.5px] border font-mono ${
+                      selectedModel.status === 'active'
+                        ? 'bg-emerald-50 border-emerald-500/30 text-emerald-700'
+                        : 'bg-amber-50 border-amber-500/30 text-amber-800'
+                    }`}
+                  >
+                    {selectedModel.badge}
+                  </span>
+                </div>
+              </div>
 
               <div className="flex items-end gap-2">
                 <div className="flex-1 min-w-0">
