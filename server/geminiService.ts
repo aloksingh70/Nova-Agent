@@ -1,13 +1,13 @@
 import { GoogleGenAI, Type } from '@google/genai';
 import type { NovaAssistantPayload, NovaMode, SqlDialect } from '../src/types/nova';
 
-const DEFAULT_MODEL = process.env.GEMINI_MODEL || 'gemini-3.5-flash-lite';
-const FALLBACK_MODES = [DEFAULT_MODEL, 'gemini-3.8-flash', 'gemini-3.5-flash', 'gemini-3.5-flash-lite'].filter(
+const DEFAULT_MODEL = (process.env.GEMINI_MODEL || 'gemini-3.5-flash-lite').trim();
+const FALLBACK_MODES = [DEFAULT_MODEL, 'gemini-3.5-flash-lite', 'gemini-3.8-flash', 'gemini-3.5-flash'].filter(
   (v, i, a) => a.indexOf(v) === i
 );
 
 function getGeminiClient(): GoogleGenAI {
-  const apiKey = process.env.GEMINI_API_KEY;
+  const apiKey = (process.env.GEMINI_API_KEY || '').trim();
   if (!apiKey || apiKey === 'MY_GEMINI_API_KEY') {
     throw new Error(
       'GEMINI_API_KEY is not configured. Open Settings > Secrets to attach a Gemini API key.'
