@@ -7,6 +7,8 @@ import {
   ArrowUpRight,
   Bookmark,
   Check,
+  ChevronLeft,
+  ChevronRight,
   Code2,
   Database,
   Download,
@@ -188,6 +190,12 @@ export const NovaStudio: React.FC<NovaStudioProps> = ({
 
   const messagesEndRef = useRef<HTMLDivElement | null>(null);
   const chatScrollRef = useRef<HTMLDivElement | null>(null);
+  const modeTabsRef = useRef<HTMLDivElement | null>(null);
+  const labTabsRef = useRef<HTMLDivElement | null>(null);
+
+  const scrollStrip = (ref: React.RefObject<HTMLDivElement | null>, delta: number) => {
+    ref.current?.scrollBy({ left: delta, behavior: 'smooth' });
+  };
   const lastSessionRef = useRef<string>(activeSessionId);
   const lastCountRef = useRef<number>(activeSession?.messages.length ?? 0);
   const activeSessionRef = useRef<ChatSession | undefined>(activeSession);
@@ -511,7 +519,7 @@ export const NovaStudio: React.FC<NovaStudioProps> = ({
       const msgModeLabel = NOVA_MODES.find((m) => m.id === msg.mode)?.shortLabel ?? msg.mode;
       return (
         <div key={msg.id} className="flex justify-end">
-          <div className="max-w-[82%] bg-[#141414] text-[#efece6] px-4 py-3 border border-[#141414]">
+          <div className="max-w-[92%] sm:max-w-[82%] bg-[#141414] text-[#efece6] px-3.5 sm:px-4 py-2.5 sm:py-3 border border-[#141414]">
             <div className="font-mono-label text-[9.5px] text-[#efece6]/55 mb-1.5 flex items-center justify-between gap-4">
               <span>{msgModeLabel}</span>
               <span>{msg.dialect}</span>
@@ -528,10 +536,10 @@ export const NovaStudio: React.FC<NovaStudioProps> = ({
 
     const payload = msg.payload;
     return (
-      <article key={msg.id} className="border border-[#141414]/20 bg-[#f6f4ef] p-5 space-y-5">
+      <article key={msg.id} className="border border-[#141414]/20 bg-[#f6f4ef] p-3.5 sm:p-5 space-y-4 sm:space-y-5">
         {/* Assistant Header */}
-        <div className="flex items-center justify-between gap-4 pb-3 border-b border-[#141414]/12">
-          <div className="flex items-center gap-2.5 font-mono-label text-[10px] text-[#141414]/65">
+        <div className="flex flex-wrap items-center justify-between gap-2 pb-2.5 sm:pb-3 border-b border-[#141414]/12">
+          <div className="flex flex-wrap items-center gap-2 font-mono-label text-[9.5px] sm:text-[10px] text-[#141414]/65">
             <span className="font-semibold text-[#141414]">NOVA AGENT</span>
             <span aria-hidden="true">·</span>
             <span>{NOVA_MODES.find((m) => m.id === msg.mode)?.label ?? msg.mode}</span>
@@ -720,16 +728,16 @@ export const NovaStudio: React.FC<NovaStudioProps> = ({
   return (
     <div
       data-testid="nova-studio-workspace"
-      className="h-screen w-full bg-[#efece6] text-[#141414] flex flex-col overflow-hidden"
+      className="nova-studio-root nova-h-dvh w-full bg-[#efece6] text-[#141414] flex flex-col overflow-hidden"
     >
       {/* Top Studio Header */}
-      <header className="h-[54px] shrink-0 border-b border-[#141414]/15 bg-[#efece6] px-4 flex items-center justify-between gap-4">
-        <div className="flex items-center gap-3 min-w-0">
+      <header className="h-[50px] sm:h-[54px] shrink-0 border-b border-[#141414]/15 bg-[#efece6] px-2.5 sm:px-4 flex items-center justify-between gap-2 sm:gap-4">
+        <div className="flex items-center gap-2 sm:gap-3 min-w-0 shrink-0">
           <button
             type="button"
             aria-label="Toggle sessions sidebar"
             onClick={() => setSidebarOpen((v) => !v)}
-            className="lg:hidden p-2 border border-[#141414]/20 hover:bg-[#141414]/5 cursor-pointer"
+            className="lg:hidden p-1.5 sm:p-2 border border-[#141414]/20 hover:bg-[#141414]/5 cursor-pointer shrink-0"
           >
             <PanelLeft className="w-4 h-4" />
           </button>
@@ -737,18 +745,18 @@ export const NovaStudio: React.FC<NovaStudioProps> = ({
           <button
             type="button"
             onClick={onBackToLanding}
-            className="inline-flex items-center gap-2 hover:opacity-75 transition-opacity cursor-pointer"
+            className="inline-flex items-center gap-1.5 sm:gap-2 hover:opacity-75 transition-opacity cursor-pointer shrink-0"
           >
             <NovaLogo compact />
-            <span className="text-[16px] font-medium tracking-[-0.02em] whitespace-nowrap">
-              NOVA STUDIO
+            <span className="text-[13.5px] sm:text-[16px] font-medium tracking-[-0.02em] whitespace-nowrap">
+              NOVA<span className="hidden sm:inline"> STUDIO</span>
             </span>
           </button>
 
           <button
             type="button"
             onClick={onBackToLanding}
-            className="hidden sm:inline-flex items-center gap-1.5 pl-3 ml-1 border-l border-[#141414]/15 font-mono-label text-[10.5px] text-[#141414]/65 hover:text-[#141414] transition-colors whitespace-nowrap shrink-0 cursor-pointer"
+            className="hidden lg:inline-flex items-center gap-1.5 pl-3 ml-1 border-l border-[#141414]/15 font-mono-label text-[10.5px] text-[#141414]/65 hover:text-[#141414] transition-colors whitespace-nowrap shrink-0 cursor-pointer"
           >
             <ArrowLeft className="w-3.5 h-3.5" />
             <span>3D Showcase</span>
@@ -756,7 +764,7 @@ export const NovaStudio: React.FC<NovaStudioProps> = ({
         </div>
 
         {/* Right Controls: Model, Dialect, Schema Context, Account */}
-        <div className="flex items-center gap-2.5 shrink-0">
+        <div className="flex items-center gap-1.5 sm:gap-2.5 shrink-0">
           <ModelSelector
             value={selectedModel}
             onChange={handleSelectModel}
@@ -770,7 +778,7 @@ export const NovaStudio: React.FC<NovaStudioProps> = ({
             id="studio-dialect"
             value={dialect}
             onChange={(e) => setDialect(e.target.value as SqlDialect)}
-            className="h-8 px-2.5 bg-[#f6f4ef] border border-[#141414]/25 font-mono-label text-[10.5px] text-[#141414] focus:outline-none focus:border-[#141414] cursor-pointer"
+            className="h-8 px-1.5 sm:px-2.5 max-w-[106px] sm:max-w-none bg-[#f6f4ef] border border-[#141414]/25 font-mono-label text-[9.5px] sm:text-[10.5px] text-[#141414] focus:outline-none focus:border-[#141414] cursor-pointer"
           >
             {DIALECT_OPTIONS.map((opt) => (
               <option key={opt.id} value={opt.id}>
@@ -782,7 +790,8 @@ export const NovaStudio: React.FC<NovaStudioProps> = ({
           <button
             type="button"
             onClick={() => setShowSchemaDrawer((v) => !v)}
-            className={`h-8 px-3 border font-mono-label text-[10.5px] inline-flex items-center gap-1.5 transition-colors whitespace-nowrap shrink-0 cursor-pointer ${
+            title={schemaContext.trim() ? 'Schema Active' : 'Schema Context'}
+            className={`h-8 px-2 sm:px-3 border font-mono-label text-[10px] sm:text-[10.5px] inline-flex items-center gap-1.5 transition-colors whitespace-nowrap shrink-0 cursor-pointer ${
               showSchemaDrawer || schemaContext.trim()
                 ? 'border-[#141414] bg-[#141414] text-[#efece6]'
                 : 'border-[#141414]/25 bg-[#f6f4ef] text-[#141414] hover:border-[#141414]'
@@ -795,20 +804,21 @@ export const NovaStudio: React.FC<NovaStudioProps> = ({
           </button>
 
           {user ? (
-            <div className="flex items-center gap-2 pl-2 border-l border-[#141414]/15">
+            <div className="flex items-center gap-1.5 sm:gap-2 pl-1.5 sm:pl-2 border-l border-[#141414]/15">
               <button
                 type="button"
                 onClick={onOpenAccount}
-                className="hidden md:inline-flex items-center gap-1.5 h-8 px-2.5 border border-[#141414]/20 bg-[#f6f4ef] hover:border-[#141414] font-mono-label text-[10.5px] text-[#141414] max-w-[150px] truncate cursor-pointer"
+                aria-label="Account profile"
+                className="inline-flex items-center gap-1.5 h-8 px-2 sm:px-2.5 border border-[#141414]/20 bg-[#f6f4ef] hover:border-[#141414] font-mono-label text-[10.5px] text-[#141414] max-w-[150px] truncate cursor-pointer"
               >
                 <User className="w-3.5 h-3.5 shrink-0" />
-                <span className="truncate">{user.name}</span>
+                <span className="hidden md:inline truncate">{user.name}</span>
               </button>
               <button
                 type="button"
                 aria-label="Sign out"
                 onClick={onLogout}
-                className="h-8 px-2.5 border border-[#141414]/25 bg-[#f6f4ef] hover:bg-[#141414] hover:text-[#efece6] font-mono-label text-[10.5px] inline-flex items-center gap-1.5 transition-colors whitespace-nowrap shrink-0 cursor-pointer"
+                className="h-8 px-2 sm:px-2.5 border border-[#141414]/25 bg-[#f6f4ef] hover:bg-[#141414] hover:text-[#efece6] font-mono-label text-[10.5px] inline-flex items-center gap-1.5 transition-colors whitespace-nowrap shrink-0 cursor-pointer"
               >
                 <LogOut className="w-3.5 h-3.5" />
                 <span className="hidden sm:inline">Sign Out</span>
@@ -818,10 +828,10 @@ export const NovaStudio: React.FC<NovaStudioProps> = ({
             <button
               type="button"
               onClick={() => onOpenAuth('login')}
-              className="nova-launch-btn h-8 px-3 font-mono-label text-[10.5px] text-[#141414] inline-flex items-center gap-1.5 whitespace-nowrap shrink-0 cursor-pointer"
+              className="nova-launch-btn h-8 px-2 sm:px-3 font-mono-label text-[10px] sm:text-[10.5px] text-[#141414] inline-flex items-center gap-1 sm:gap-1.5 whitespace-nowrap shrink-0 cursor-pointer"
             >
               <LogIn className="w-3.5 h-3.5" />
-              <span>Sign In</span>
+              <span className="hidden sm:inline">Sign In</span>
             </button>
           )}
         </div>
@@ -829,12 +839,21 @@ export const NovaStudio: React.FC<NovaStudioProps> = ({
 
       {/* Main Split Body */}
       <div className="flex-1 flex min-h-0 relative">
+        {/* Mobile & Tablet Backdrop to tap-dismiss sidebar */}
+        {sidebarOpen && (
+          <div
+            aria-hidden="true"
+            onClick={() => setSidebarOpen(false)}
+            className="fixed inset-0 top-[50px] sm:top-[54px] z-20 bg-[#141414]/45 backdrop-blur-[1px] lg:hidden"
+          />
+        )}
+
         {/* Left Chat History Sidebar */}
         <aside
           aria-label="Chat history"
           className={`${
             sidebarOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'
-          } fixed lg:static inset-y-[54px] left-0 z-30 w-[280px] shrink-0 bg-[#efece6] border-r border-[#141414]/15 flex flex-col transition-transform duration-200`}
+          } fixed lg:static top-[50px] sm:top-[54px] bottom-0 left-0 z-30 w-[min(280px,84vw)] lg:w-[280px] shrink-0 bg-[#efece6] border-r border-[#141414]/15 flex flex-col transition-transform duration-200`}
         >
           <div className="p-3 border-b border-[#141414]/15 space-y-2.5">
             <div className="flex items-center gap-2">
@@ -1096,126 +1115,193 @@ export const NovaStudio: React.FC<NovaStudioProps> = ({
 
         {/* Main Workspace Column */}
         <main id="main-content" className="flex-1 flex flex-col min-w-0 bg-[#efece6]">
-          {/* Mode Selector Bar + Studio Lab Toggles */}
-          <div className="shrink-0 border-b border-[#141414]/15 bg-[#f6f4ef] px-4 py-2 flex items-center justify-between gap-3 overflow-x-auto nova-scroll">
-            <div role="tablist" aria-label="AI Database Tools" className="flex items-center gap-1">
-              {NOVA_MODES.map((item) => {
-                const active = mode === item.id;
-                return (
-                  <button
-                    key={item.id}
-                    role="tab"
-                    type="button"
-                    aria-selected={active}
-                    onClick={() => handleModeSelect(item.id)}
-                    className={`px-2.5 py-1.5 font-mono-label text-[10px] whitespace-nowrap shrink-0 border transition-colors cursor-pointer ${
-                      active
-                        ? 'bg-[#141414] text-[#efece6] border-[#141414]'
-                        : 'bg-[#efece6] text-[#141414]/75 border-[#141414]/15 hover:border-[#141414]/40 hover:text-[#141414]'
-                    }`}
-                  >
-                    {item.shortLabel}
-                  </button>
-                );
-              })}
+          {/* Mode Selector Tabs + Studio Lab Toggles (Touch-friendly horizontal scroll & rotation controls) */}
+          <div className="shrink-0 border-b border-[#141414]/15 bg-[#f6f4ef] px-2.5 sm:px-4 py-1.5 sm:py-2 flex flex-col xl:flex-row xl:items-center justify-between gap-1.5 sm:gap-2">
+            {/* Row 1: AI Database Tool Mode Tabs */}
+            <div className="flex items-center gap-1 min-w-0">
+              <button
+                type="button"
+                aria-label="Scroll AI mode tabs left"
+                onClick={() => scrollStrip(modeTabsRef, -160)}
+                className="xl:hidden p-1 border border-[#141414]/15 bg-[#efece6] text-[#141414]/70 hover:text-[#141414] shrink-0 cursor-pointer"
+              >
+                <ChevronLeft className="w-3.5 h-3.5" />
+              </button>
+
+              <div
+                ref={modeTabsRef}
+                role="tablist"
+                aria-label="AI Database Tools"
+                className="flex-1 min-w-0 flex items-center gap-1 overflow-x-auto nova-tabs-scroll touch-pan-x snap-x"
+              >
+                {NOVA_MODES.map((item) => {
+                  const active = mode === item.id;
+                  return (
+                    <button
+                      key={item.id}
+                      role="tab"
+                      type="button"
+                      aria-selected={active}
+                      onClick={(e) => {
+                        handleModeSelect(item.id);
+                        e.currentTarget.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' });
+                      }}
+                      className={`px-2.5 py-1 sm:py-1.5 font-mono-label text-[10px] whitespace-nowrap shrink-0 snap-start border transition-colors cursor-pointer ${
+                        active
+                          ? 'bg-[#141414] text-[#efece6] border-[#141414]'
+                          : 'bg-[#efece6] text-[#141414]/75 border-[#141414]/15 hover:border-[#141414]/40 hover:text-[#141414]'
+                      }`}
+                    >
+                      {item.shortLabel}
+                    </button>
+                  );
+                })}
+              </div>
+
+              <button
+                type="button"
+                aria-label="Scroll AI mode tabs right"
+                onClick={() => scrollStrip(modeTabsRef, 160)}
+                className="xl:hidden p-1 border border-[#141414]/15 bg-[#efece6] text-[#141414]/70 hover:text-[#141414] shrink-0 cursor-pointer"
+              >
+                <ChevronRight className="w-3.5 h-3.5" />
+              </button>
             </div>
 
-            <div className="flex items-center gap-1.5 shrink-0">
+            {/* Row 2: Studio Lab Toggles */}
+            <div className="flex items-center gap-1 min-w-0 shrink-0">
               <button
                 type="button"
-                data-testid="schema-er-toggle"
-                onClick={() =>
-                  setActiveLab((prev) => (prev === 'schema-er' ? 'none' : 'schema-er'))
-                }
-                className={`px-2.5 py-1.5 font-mono-label text-[10px] whitespace-nowrap shrink-0 border inline-flex items-center gap-1.5 transition-colors cursor-pointer ${
-                  activeLab === 'schema-er'
-                    ? 'border-[#ff5a5f] bg-[#141414] text-[#efece6]'
-                    : 'border-[#141414]/25 bg-[#efece6] text-[#141414] hover:border-[#141414]'
-                }`}
+                aria-label="Scroll studio labs left"
+                onClick={() => scrollStrip(labTabsRef, -180)}
+                className="xl:hidden p-1 border border-[#141414]/15 bg-[#efece6] text-[#141414]/70 hover:text-[#141414] shrink-0 cursor-pointer"
               >
-                <GitBranch className="w-3.5 h-3.5" />
-                <span>{activeLab === 'schema-er' ? 'Close ER' : 'Schema ER'}</span>
+                <ChevronLeft className="w-3.5 h-3.5" />
               </button>
+
+              <div
+                ref={labTabsRef}
+                className="flex-1 min-w-0 flex items-center gap-1.5 overflow-x-auto nova-tabs-scroll touch-pan-x snap-x"
+              >
+                <button
+                  type="button"
+                  data-testid="schema-er-toggle"
+                  onClick={(e) => {
+                    setActiveLab((prev) => (prev === 'schema-er' ? 'none' : 'schema-er'));
+                    e.currentTarget.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' });
+                  }}
+                  className={`px-2.5 py-1 sm:py-1.5 font-mono-label text-[10px] whitespace-nowrap shrink-0 snap-start border inline-flex items-center gap-1.5 transition-colors cursor-pointer ${
+                    activeLab === 'schema-er'
+                      ? 'border-[#ff5a5f] bg-[#141414] text-[#efece6]'
+                      : 'border-[#141414]/25 bg-[#efece6] text-[#141414] hover:border-[#141414]'
+                  }`}
+                >
+                  <GitBranch className="w-3.5 h-3.5" />
+                  <span>{activeLab === 'schema-er' ? 'Close ER' : 'Schema ER'}</span>
+                </button>
+
+                <button
+                  type="button"
+                  data-testid="schema-diff-toggle"
+                  onClick={(e) => {
+                    setActiveLab((prev) => (prev === 'schema-diff' ? 'none' : 'schema-diff'));
+                    e.currentTarget.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' });
+                  }}
+                  className={`px-2.5 py-1 sm:py-1.5 font-mono-label text-[10px] whitespace-nowrap shrink-0 snap-start border inline-flex items-center gap-1.5 transition-colors cursor-pointer ${
+                    activeLab === 'schema-diff'
+                      ? 'border-[#ff5a5f] bg-[#141414] text-[#efece6]'
+                      : 'border-[#141414]/25 bg-[#efece6] text-[#141414] hover:border-[#141414]'
+                  }`}
+                >
+                  <GitCompareArrows className="w-3.5 h-3.5" />
+                  <span>{activeLab === 'schema-diff' ? 'Close Diff' : 'Schema Diff'}</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    setActiveLab((prev) => (prev === 'query' ? 'none' : 'query'));
+                    e.currentTarget.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' });
+                  }}
+                  className={`px-2.5 py-1 sm:py-1.5 font-mono-label text-[10px] whitespace-nowrap shrink-0 snap-start border inline-flex items-center gap-1.5 transition-colors cursor-pointer ${
+                    activeLab === 'query'
+                      ? 'border-[#ff5a5f] bg-[#141414] text-[#efece6]'
+                      : 'border-[#141414]/25 bg-[#efece6] text-[#141414] hover:border-[#141414]'
+                  }`}
+                >
+                  <Wrench className="w-3.5 h-3.5" />
+                  <span>{activeLab === 'query' ? 'Close Lab' : 'Query Lab'}</span>
+                </button>
+
+                <button
+                  type="button"
+                  data-testid="sandbox-toggle"
+                  onClick={(e) => {
+                    setActiveLab((prev) => (prev === 'sandbox' ? 'none' : 'sandbox'));
+                    e.currentTarget.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' });
+                  }}
+                  className={`px-2.5 py-1 sm:py-1.5 font-mono-label text-[10px] whitespace-nowrap shrink-0 snap-start border inline-flex items-center gap-1.5 transition-colors cursor-pointer ${
+                    activeLab === 'sandbox'
+                      ? 'border-[#ff5a5f] bg-[#141414] text-[#efece6]'
+                      : 'border-[#141414]/25 bg-[#efece6] text-[#141414] hover:border-[#141414]'
+                  }`}
+                >
+                  <Play className="w-3.5 h-3.5" />
+                  <span>{activeLab === 'sandbox' ? 'Close Sandbox' : 'SQL Sandbox'}</span>
+                </button>
+
+                <button
+                  type="button"
+                  data-testid="explain-plan-toggle"
+                  onClick={(e) => {
+                    setActiveLab((prev) => (prev === 'explain-plan' ? 'none' : 'explain-plan'));
+                    e.currentTarget.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' });
+                  }}
+                  className={`px-2.5 py-1 sm:py-1.5 font-mono-label text-[10px] whitespace-nowrap shrink-0 snap-start border inline-flex items-center gap-1.5 transition-colors cursor-pointer ${
+                    activeLab === 'explain-plan'
+                      ? 'border-[#ff5a5f] bg-[#141414] text-[#efece6]'
+                      : 'border-[#141414]/25 bg-[#efece6] text-[#141414] hover:border-[#141414]'
+                  }`}
+                >
+                  <Layers className="w-3.5 h-3.5" />
+                  <span>{activeLab === 'explain-plan' ? 'Close Plan' : 'Plan Explorer'}</span>
+                </button>
+
+                <button
+                  type="button"
+                  data-testid="translator-toggle"
+                  onClick={(e) => {
+                    setActiveLab((prev) => (prev === 'translator' ? 'none' : 'translator'));
+                    e.currentTarget.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' });
+                  }}
+                  className={`px-2.5 py-1 sm:py-1.5 font-mono-label text-[10px] whitespace-nowrap shrink-0 snap-start border inline-flex items-center gap-1.5 transition-colors cursor-pointer ${
+                    activeLab === 'translator'
+                      ? 'border-[#ff5a5f] bg-[#141414] text-[#efece6]'
+                      : 'border-[#141414]/25 bg-[#efece6] text-[#141414] hover:border-[#141414]'
+                  }`}
+                >
+                  <RotateCw className="w-3.5 h-3.5" />
+                  <span>{activeLab === 'translator' ? 'Close Translator' : 'Translator'}</span>
+                </button>
+
+                <button
+                  type="button"
+                  data-testid="snippet-library-toggle"
+                  onClick={() => setShowSnippetModal(true)}
+                  className="px-2.5 py-1 sm:py-1.5 font-mono-label text-[10px] whitespace-nowrap shrink-0 snap-start border border-[#141414]/25 bg-[#efece6] text-[#141414] hover:border-[#141414] inline-flex items-center gap-1.5 transition-colors cursor-pointer"
+                >
+                  <Bookmark className="w-3.5 h-3.5" />
+                  <span>Snippets &amp; Library</span>
+                </button>
+              </div>
 
               <button
                 type="button"
-                data-testid="schema-diff-toggle"
-                onClick={() =>
-                  setActiveLab((prev) => (prev === 'schema-diff' ? 'none' : 'schema-diff'))
-                }
-                className={`px-2.5 py-1.5 font-mono-label text-[10px] whitespace-nowrap shrink-0 border inline-flex items-center gap-1.5 transition-colors cursor-pointer ${
-                  activeLab === 'schema-diff'
-                    ? 'border-[#ff5a5f] bg-[#141414] text-[#efece6]'
-                    : 'border-[#141414]/25 bg-[#efece6] text-[#141414] hover:border-[#141414]'
-                }`}
+                aria-label="Scroll studio labs right"
+                onClick={() => scrollStrip(labTabsRef, 180)}
+                className="xl:hidden p-1 border border-[#141414]/15 bg-[#efece6] text-[#141414]/70 hover:text-[#141414] shrink-0 cursor-pointer"
               >
-                <GitCompareArrows className="w-3.5 h-3.5" />
-                <span>{activeLab === 'schema-diff' ? 'Close Diff' : 'Schema Diff'}</span>
-              </button>
-
-              <button
-                type="button"
-                onClick={() => setActiveLab((prev) => (prev === 'query' ? 'none' : 'query'))}
-                className={`px-2.5 py-1.5 font-mono-label text-[10px] whitespace-nowrap shrink-0 border inline-flex items-center gap-1.5 transition-colors cursor-pointer ${
-                  activeLab === 'query'
-                    ? 'border-[#ff5a5f] bg-[#141414] text-[#efece6]'
-                    : 'border-[#141414]/25 bg-[#efece6] text-[#141414] hover:border-[#141414]'
-                }`}
-              >
-                <Wrench className="w-3.5 h-3.5" />
-                <span>{activeLab === 'query' ? 'Close Lab' : 'Query Lab'}</span>
-              </button>
-
-              <button
-                type="button"
-                data-testid="sandbox-toggle"
-                onClick={() => setActiveLab((prev) => (prev === 'sandbox' ? 'none' : 'sandbox'))}
-                className={`px-2.5 py-1.5 font-mono-label text-[10px] whitespace-nowrap shrink-0 border inline-flex items-center gap-1.5 transition-colors cursor-pointer ${
-                  activeLab === 'sandbox'
-                    ? 'border-[#ff5a5f] bg-[#141414] text-[#efece6]'
-                    : 'border-[#141414]/25 bg-[#efece6] text-[#141414] hover:border-[#141414]'
-                }`}
-              >
-                <Play className="w-3.5 h-3.5" />
-                <span>{activeLab === 'sandbox' ? 'Close Sandbox' : 'SQL Sandbox'}</span>
-              </button>
-
-              <button
-                type="button"
-                data-testid="explain-plan-toggle"
-                onClick={() => setActiveLab((prev) => (prev === 'explain-plan' ? 'none' : 'explain-plan'))}
-                className={`px-2.5 py-1.5 font-mono-label text-[10px] whitespace-nowrap shrink-0 border inline-flex items-center gap-1.5 transition-colors cursor-pointer ${
-                  activeLab === 'explain-plan'
-                    ? 'border-[#ff5a5f] bg-[#141414] text-[#efece6]'
-                    : 'border-[#141414]/25 bg-[#efece6] text-[#141414] hover:border-[#141414]'
-                }`}
-              >
-                <Layers className="w-3.5 h-3.5" />
-                <span>{activeLab === 'explain-plan' ? 'Close Plan' : 'Plan Explorer'}</span>
-              </button>
-
-              <button
-                type="button"
-                data-testid="translator-toggle"
-                onClick={() => setActiveLab((prev) => (prev === 'translator' ? 'none' : 'translator'))}
-                className={`px-2.5 py-1.5 font-mono-label text-[10px] whitespace-nowrap shrink-0 border inline-flex items-center gap-1.5 transition-colors cursor-pointer ${
-                  activeLab === 'translator'
-                    ? 'border-[#ff5a5f] bg-[#141414] text-[#efece6]'
-                    : 'border-[#141414]/25 bg-[#efece6] text-[#141414] hover:border-[#141414]'
-                }`}
-              >
-                <RotateCw className="w-3.5 h-3.5" />
-                <span>{activeLab === 'translator' ? 'Close Translator' : 'Translator'}</span>
-              </button>
-
-              <button
-                type="button"
-                data-testid="snippet-library-toggle"
-                onClick={() => setShowSnippetModal(true)}
-                className="px-2.5 py-1.5 font-mono-label text-[10px] whitespace-nowrap shrink-0 border border-[#141414]/25 bg-[#efece6] text-[#141414] hover:border-[#141414] inline-flex items-center gap-1.5 transition-colors cursor-pointer"
-              >
-                <Bookmark className="w-3.5 h-3.5" />
-                <span>Snippets &amp; Library</span>
+                <ChevronRight className="w-3.5 h-3.5" />
               </button>
             </div>
           </div>
@@ -1299,7 +1385,7 @@ export const NovaStudio: React.FC<NovaStudioProps> = ({
           {/* Scrollable Messages + Studio Labs Viewport */}
           <div
             ref={chatScrollRef}
-            className="flex-1 overflow-y-auto nova-scroll px-4 sm:px-6 lg:px-10 py-6"
+            className="nova-studio-main-scroll flex-1 overflow-y-auto nova-scroll px-3 sm:px-6 lg:px-10 py-4 sm:py-6"
           >
             <div className="max-w-[980px] mx-auto space-y-6">
               {(activeLab === 'schema-er' || activeLab === 'schema-diff') && (
@@ -1622,13 +1708,13 @@ export const NovaStudio: React.FC<NovaStudioProps> = ({
           {/* Bottom Prompt Composer */}
           <form
             onSubmit={handleSubmit}
-            className="shrink-0 border-t border-[#141414]/15 bg-[#f6f4ef] px-4 sm:px-6 lg:px-10 py-3.5"
+            className="shrink-0 border-t border-[#141414]/15 bg-[#f6f4ef] px-3 sm:px-6 lg:px-10 py-2.5 sm:py-3.5 nova-safe-bottom"
           >
-            <div className="max-w-[980px] mx-auto flex flex-col gap-2">
+            <div className="max-w-[980px] mx-auto flex flex-col gap-1.5 sm:gap-2">
               {!user && (
                 <div
                   data-testid="prompt-login-gate"
-                  className="px-3 py-2 border border-[#141414]/20 bg-[#efece6] flex flex-wrap items-center justify-between gap-2 text-[12px]"
+                  className="px-2.5 sm:px-3 py-1.5 sm:py-2 border border-[#141414]/20 bg-[#efece6] flex flex-wrap items-center justify-between gap-2 text-[11.5px] sm:text-[12px]"
                 >
                   <span className="text-[#141414]/80">
                     Sign in with Google to run AI prompts — live SQL syntax highlighting &amp; linting works as you type.
@@ -1637,7 +1723,7 @@ export const NovaStudio: React.FC<NovaStudioProps> = ({
                     <button
                       type="button"
                       onClick={() => onOpenAuth('login', input.trim() || undefined)}
-                      className="px-3 py-1 bg-[#141414] text-[#efece6] hover:bg-[#2a2928] font-mono-label text-[9.5px] transition-colors cursor-pointer"
+                      className="px-2.5 sm:px-3 py-1 bg-[#141414] text-[#efece6] hover:bg-[#2a2928] font-mono-label text-[9.5px] transition-colors cursor-pointer"
                     >
                       Continue with Google
                     </button>
@@ -1645,15 +1731,15 @@ export const NovaStudio: React.FC<NovaStudioProps> = ({
                 </div>
               )}
 
-              <div className="flex items-center justify-between px-1 text-[11px] text-[#141414]/70">
-                <div className="inline-flex items-center gap-1.5 font-mono text-[10.5px]">
-                  <span className="text-[#141414]/50">Engine:</span>
+              <div className="flex flex-wrap items-center justify-between gap-x-2 gap-y-1.5 px-0.5 sm:px-1 text-[11px] text-[#141414]/70">
+                <div className="inline-flex flex-wrap items-center gap-1.5 font-mono text-[10px] sm:text-[10.5px]">
+                  <span className="text-[#141414]/50 hidden sm:inline">Engine:</span>
                   <span className="inline-flex items-center gap-1 px-1.5 py-0.5 border border-[#141414]/20 bg-[#efece6] text-[#141414]">
                     <img src={selectedModel.logo} alt={selectedModel.name} className="w-3.5 h-3.5 object-contain" />
                     <span className="font-semibold">{selectedModel.name}</span>
                   </span>
                   <span
-                    className={`px-1.5 py-0.5 text-[9.5px] border font-mono ${
+                    className={`px-1.5 py-0.5 text-[9px] sm:text-[9.5px] border font-mono ${
                       selectedModel.status === 'active'
                         ? 'bg-emerald-50 border-emerald-500/30 text-emerald-700'
                         : 'bg-amber-50 border-amber-500/30 text-amber-800'
@@ -1696,7 +1782,7 @@ export const NovaStudio: React.FC<NovaStudioProps> = ({
                   </button>
 
                   {showRecentDropdown && (
-                    <div className="absolute right-0 bottom-full mb-1 w-80 max-h-60 overflow-y-auto bg-[#f6f4ef] border border-[#141414]/30 shadow-lg z-50 p-1 space-y-1">
+                    <div className="absolute right-0 bottom-full mb-1 w-[min(320px,calc(100vw-2rem))] max-h-60 overflow-y-auto nova-scroll bg-[#f6f4ef] border border-[#141414]/30 shadow-lg z-50 p-1 space-y-1">
                       <div className="px-2 py-1 border-b border-[#141414]/15 flex items-center justify-between text-[10px] font-mono-label text-[#141414]/60">
                         <span>Recent Session Queries ({recentQueries.length}/10)</span>
                         <button
@@ -1760,7 +1846,7 @@ export const NovaStudio: React.FC<NovaStudioProps> = ({
                   type="submit"
                   data-testid="composer-submit-btn"
                   disabled={user ? !input.trim() : false}
-                  className="h-[58px] px-5 bg-[#141414] text-[#efece6] hover:bg-[#2a2928] disabled:opacity-40 font-mono-label text-[11px] inline-flex items-center gap-2 transition-colors whitespace-nowrap shrink-0 cursor-pointer"
+                  className="h-[48px] sm:h-[58px] px-3.5 sm:px-5 bg-[#141414] text-[#efece6] hover:bg-[#2a2928] disabled:opacity-40 font-mono-label text-[10.5px] sm:text-[11px] inline-flex items-center gap-1.5 sm:gap-2 transition-colors whitespace-nowrap shrink-0 cursor-pointer"
                 >
                   <span>{!user ? 'Sign In' : loading ? 'Queue Next' : 'Run'}</span>
                   {loading && user ? (

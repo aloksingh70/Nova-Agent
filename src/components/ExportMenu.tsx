@@ -119,7 +119,7 @@ export const ExportMenu: React.FC<ExportMenuProps> = ({
           data-testid={`${testId}-dropdown`}
           className={`absolute ${
             align === 'right' ? 'right-0' : 'left-0'
-          } top-full mt-1.5 z-40 w-[296px] border border-[#141414]/30 bg-[#efece6] text-[#141414] shadow-lg`}
+          } top-full mt-1.5 z-40 w-[min(296px,calc(100vw-2rem))] max-h-[min(360px,calc(100dvh-100px))] overflow-y-auto nova-scroll border border-[#141414]/30 bg-[#efece6] text-[#141414] shadow-lg`}
         >
           {imageOptions.length > 0 && (
             <div className="p-1.5 border-b border-[#141414]/15">

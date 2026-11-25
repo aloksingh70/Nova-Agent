@@ -34,6 +34,7 @@ html {
   background-color: var(--paper);
   color: var(--ink);
   font-family: var(--font-sans);
+  -webkit-text-size-adjust: 100%;
 }
 
 body {
@@ -258,4 +259,44 @@ select:focus-visible {
 }
 .nova-scroll::-webkit-scrollbar-thumb:hover {
   background: rgba(20, 20, 20, 0.3);
+}
+
+/* Smooth touch-scrollable horizontal tab bars (mobile & tablet) */
+.nova-tabs-scroll {
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior-x: contain;
+  scrollbar-width: none;
+  scroll-behavior: smooth;
+}
+.nova-tabs-scroll::-webkit-scrollbar {
+  display: none;
+}
+
+/* Dynamic viewport height with fallback */
+.nova-h-dvh {
+  height: 100vh;
+  height: 100dvh;
+}
+
+/* Mobile & Tablet horizontal rotation (landscape / short viewport height) */
+@media (max-height: 540px) and (orientation: landscape) {
+  .nova-studio-root {
+    height: auto !important;
+    min-height: 100dvh;
+    overflow-y: auto !important;
+  }
+  .nova-studio-main-scroll {
+    min-height: 220px;
+  }
+}
+
+/* Safe area bottom padding for notched phones in portrait & landscape */
+@supports (padding: max(0px)) {
+  .nova-safe-x {
+    padding-left: max(0.75rem, env(safe-area-inset-left));
+    padding-right: max(0.75rem, env(safe-area-inset-right));
+  }
+  .nova-safe-bottom {
+    padding-bottom: max(0.75rem, env(safe-area-inset-bottom));
+  }
 }

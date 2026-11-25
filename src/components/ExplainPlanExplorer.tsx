@@ -93,8 +93,8 @@ export const ExplainPlanExplorer: React.FC<ExplainPlanExplorerProps> = ({
           </div>
         </div>
 
-        <div className="flex items-center gap-2">
-          <div className="flex items-center gap-1">
+        <div className="flex flex-wrap items-center gap-2">
+          <div className="flex flex-wrap items-center gap-1">
             {SAMPLE_EXPLAIN_PLANS.map((sample, idx) => (
               <button
                 key={idx}
@@ -111,7 +111,7 @@ export const ExplainPlanExplorer: React.FC<ExplainPlanExplorerProps> = ({
             type="button"
             disabled={!parsedPlan.data}
             onClick={handleOptimizeClick}
-            className="px-3 py-1.5 bg-[#141414] text-[#efece6] hover:bg-[#2a2928] disabled:opacity-40 font-mono-label text-[10.5px] inline-flex items-center gap-1.5 transition-colors cursor-pointer shadow-xs"
+            className="px-3 py-1.5 bg-[#141414] text-[#efece6] hover:bg-[#2a2928] disabled:opacity-40 font-mono-label text-[10px] sm:text-[10.5px] inline-flex items-center gap-1.5 transition-colors cursor-pointer shadow-xs"
           >
             <Sparkles className="w-3.5 h-3.5 text-[#ff5a5f]" />
             <span>Optimize This Plan</span>
@@ -124,21 +124,21 @@ export const ExplainPlanExplorer: React.FC<ExplainPlanExplorerProps> = ({
       <div className="grid grid-cols-1 lg:grid-cols-[1fr_1.35fr] divide-y lg:divide-y-0 lg:divide-x divide-[#141414]/15">
         {/* Left: Input EXPLAIN Text/JSON */}
         <div className="flex flex-col bg-[#19191c]">
-          <div className="px-3 py-2 border-b border-white/10 flex items-center justify-between text-[11px] font-mono text-[#f3f0ea]/70">
+          <div className="px-3 py-2 border-b border-white/10 flex flex-wrap items-center justify-between gap-2 text-[11px] font-mono text-[#f3f0ea]/70">
             <span>Paste EXPLAIN (ANALYZE, FORMAT JSON) or Text</span>
             <span className="text-[10px] text-[#f3f0ea]/40">PostgreSQL &amp; MySQL</span>
           </div>
           <textarea
             value={inputPlan}
             onChange={(e) => setInputPlan(e.target.value)}
-            rows={14}
-            className="w-full flex-1 p-3 bg-transparent text-[#f3f0ea] font-mono text-[11.5px] leading-[1.6] focus:outline-none resize-none nova-scroll"
+            rows={10}
+            className="w-full flex-1 min-h-[180px] p-3 bg-transparent text-[#f3f0ea] font-mono text-[11.5px] leading-[1.6] focus:outline-none resize-y nova-scroll"
             placeholder="Paste your EXPLAIN output here..."
           />
         </div>
 
         {/* Right: Visual Plan Tree */}
-        <div className="flex flex-col bg-[#fbf9f5] min-h-[350px]">
+        <div className="flex flex-col bg-[#fbf9f5] min-h-[260px] sm:min-h-[350px]">
           {parsedPlan.error ? (
             <div className="p-6 text-center text-[#dc2626] font-mono text-[12px]">
               {parsedPlan.error}
@@ -250,7 +250,7 @@ const PlanTreeNode: React.FC<PlanTreeNodeProps> = ({
   const costPct = Math.max(3, Math.min(100, Math.round((node.totalCost / maxCost) * 100)));
 
   return (
-    <div className="space-y-1" style={{ marginLeft: `${depth * 18}px` }}>
+    <div className="space-y-1" style={{ marginLeft: `${Math.min(depth * 12, 48)}px` }}>
       <div
         onClick={() => onSelect(node)}
         className={`p-2.5 border transition-all cursor-pointer flex flex-col gap-1.5 ${

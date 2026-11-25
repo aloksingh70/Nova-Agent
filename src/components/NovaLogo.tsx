@@ -6,7 +6,7 @@ interface NovaLogoProps {
 
 export const NovaLogo: React.FC<NovaLogoProps> = ({ compact = false }) => {
   return (
-    <span className="inline-flex items-center gap-2.5 whitespace-nowrap shrink-0 select-none">
+    <span className="inline-flex items-center gap-2 sm:gap-2.5 whitespace-nowrap shrink-0 select-none">
       <svg
         width="27"
         height="27"
@@ -36,7 +36,7 @@ export const NovaLogo: React.FC<NovaLogoProps> = ({ compact = false }) => {
         <circle cx="17.3" cy="13.6" r="1.9" fill="#141414" />
       </svg>
       {!compact && (
-        <span className="text-[18px] font-medium tracking-[-0.02em] text-[#141414] leading-none">
+        <span className="text-[14px] sm:text-[18px] font-medium tracking-[-0.02em] text-[#141414] leading-none">
           NOVA AGENT
         </span>
       )}

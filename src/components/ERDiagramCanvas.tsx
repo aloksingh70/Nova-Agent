@@ -256,7 +256,7 @@ export const ERDiagramCanvas: React.FC<ERDiagramCanvasProps> = ({ diagram, diale
       <div
         className={
           view === 'diagram'
-            ? 'nova-scroll overflow-auto max-h-[480px] bg-[#f6f4ef]'
+            ? 'nova-scroll overflow-auto max-h-[300px] sm:max-h-[480px] bg-[#f6f4ef]'
             : 'sr-only'
         }
         aria-hidden={view !== 'diagram'}

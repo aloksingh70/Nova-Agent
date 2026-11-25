@@ -103,7 +103,7 @@ export const DataChartGenerator: React.FC<DataChartGeneratorProps> = ({
           </span>
         </div>
 
-        <div className="flex items-center gap-1.5">
+        <div className="flex flex-wrap items-center gap-1.5">
           <button
             type="button"
             onClick={() => setChartType('bar')}
@@ -156,7 +156,7 @@ export const DataChartGenerator: React.FC<DataChartGeneratorProps> = ({
 
       {/* Axis Selectors */}
       <div className="px-3 py-2 bg-[#f6f4ef] border-b border-[#141414]/10 flex flex-wrap items-center gap-4 text-[11px] font-mono">
-        <div className="flex items-center gap-1.5">
+        <div className="flex flex-wrap items-center gap-1.5">
           <span className="text-[#141414]/60">Label:</span>
           <select
             value={selectedLabelCol}
@@ -171,7 +171,7 @@ export const DataChartGenerator: React.FC<DataChartGeneratorProps> = ({
           </select>
         </div>
 
-        <div className="flex items-center gap-1.5">
+        <div className="flex flex-wrap items-center gap-1.5">
           <span className="text-[#141414]/60">Metric:</span>
           <select
             value={selectedNumCol}
@@ -224,7 +224,7 @@ export const DataChartGenerator: React.FC<DataChartGeneratorProps> = ({
               const pct = Math.max(4, Math.round((d.val / maxVal) * 100));
               return (
                 <div key={i} className="flex items-center gap-3 text-[11px] font-mono">
-                  <span className="w-28 sm:w-36 truncate text-[#141414]/80 text-right shrink-0" title={d.label}>
+                  <span className="w-20 sm:w-36 truncate text-[#141414]/80 text-right shrink-0" title={d.label}>
                     {d.label}
                   </span>
                   <div className="flex-1 bg-[#141414]/5 h-5 rounded-xs overflow-hidden flex items-center relative">

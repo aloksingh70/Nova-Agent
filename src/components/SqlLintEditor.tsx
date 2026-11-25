@@ -126,7 +126,9 @@ export const SqlLintEditor: React.FC<SqlLintEditorProps> = ({
   const textareaRef = useRef<HTMLTextAreaElement | null>(null);
   const backdropRef = useRef<HTMLDivElement | null>(null);
   const gutterRef = useRef<HTMLDivElement | null>(null);
-  const [panelExpanded, setPanelExpanded] = useState(true);
+  const [panelExpanded, setPanelExpanded] = useState(() =>
+    typeof window !== 'undefined' ? window.innerHeight >= 540 : true
+  );
   const [cursorIndex, setCursorIndex] = useState(0);
 
   const lint = useMemo(() => lintSqlLive(value, dialect, schemaContext), [value, dialect, schemaContext]);
@@ -560,7 +562,7 @@ export const SqlLintEditor: React.FC<SqlLintEditorProps> = ({
           <div
             ref={gutterRef}
             aria-hidden="true"
-            className="w-9 shrink-0 overflow-hidden select-none border-r border-[#efece6]/12 bg-[#141417] py-2.5 px-1.5 text-right font-mono text-[11px] leading-[1.6] text-[#efece6]/35 tabular-nums"
+            className="w-7 sm:w-9 shrink-0 overflow-hidden select-none border-r border-[#efece6]/12 bg-[#141417] py-2.5 px-1 sm:px-1.5 text-right font-mono text-[11px] leading-[1.6] text-[#efece6]/35 tabular-nums"
           >
             {Array.from({ length: lineCount }, (_, idx) => {
               const ln = idx + 1;
@@ -617,7 +619,7 @@ export const SqlLintEditor: React.FC<SqlLintEditorProps> = ({
           {autocompleteMatch && autocompleteMatch.items.length > 0 && (
             <div
               data-testid="sql-autocomplete-dropdown"
-              className="absolute left-2.5 bottom-full mb-1 w-64 bg-[#fbf9f5] border border-[#141414] shadow-xl z-50 overflow-hidden divide-y divide-[#141414]/10 animate-in fade-in duration-100"
+              className="absolute left-1.5 sm:left-2.5 bottom-full mb-1 w-[min(280px,calc(100vw-3rem))] max-w-full bg-[#fbf9f5] border border-[#141414] shadow-xl z-50 overflow-hidden divide-y divide-[#141414]/10 animate-in fade-in duration-100"
             >
               <div className="px-2.5 py-1 bg-[#efece6] flex items-center justify-between text-[10px] font-mono text-[#141414]/70">
                 <span className="font-semibold flex items-center gap-1">
@@ -626,7 +628,7 @@ export const SqlLintEditor: React.FC<SqlLintEditorProps> = ({
                 </span>
                 <span className="text-[9px] text-[#141414]/40">↑↓ Tab</span>
               </div>
-              <div className="max-h-40 overflow-y-auto nova-scroll p-1 space-y-0.5">
+              <div className="max-h-32 sm:max-h-40 overflow-y-auto nova-scroll p-1 space-y-0.5">
                 {autocompleteMatch.items.map((item, idx) => {
                   const isSelected = idx === autocompleteIndex;
                   return (

@@ -180,8 +180,8 @@ export const SnippetLibraryModal: React.FC<SnippetLibraryModalProps> = ({
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 bg-[#141414]/60 backdrop-blur-xs flex items-center justify-center p-4">
-      <div className="w-full max-w-3xl bg-[#fbf9f5] border border-[#141414] shadow-2xl flex flex-col max-h-[85vh] overflow-hidden">
+    <div className="fixed inset-0 z-50 bg-[#141414]/60 backdrop-blur-xs flex items-start sm:items-center justify-center p-3 sm:p-4 overflow-y-auto">
+      <div className="w-full max-w-3xl bg-[#fbf9f5] border border-[#141414] shadow-2xl flex flex-col max-h-[92dvh] sm:max-h-[85dvh] overflow-hidden my-auto">
         {/* Header */}
         <div className="p-4 border-b border-[#141414]/15 bg-[#efece6] flex items-center justify-between">
           <div className="flex items-center gap-2">
@@ -261,8 +261,8 @@ export const SnippetLibraryModal: React.FC<SnippetLibraryModalProps> = ({
                   key={snip.id}
                   className="p-3.5 border border-[#141414]/20 bg-white hover:border-[#141414]/40 transition-all flex flex-col gap-2"
                 >
-                  <div className="flex items-center justify-between gap-3">
-                    <div className="flex items-center gap-2">
+                  <div className="flex flex-wrap items-center justify-between gap-2.5">
+                    <div className="flex flex-wrap items-center gap-2 min-w-0">
                       {snip.type === 'ddl' && (
                         <input
                           type="checkbox"
@@ -339,7 +339,7 @@ export const SnippetLibraryModal: React.FC<SnippetLibraryModalProps> = ({
         </div>
 
         {/* Footer with Compare action */}
-        <div className="p-3 border-t border-[#141414]/15 bg-[#efece6] flex items-center justify-between text-[11px] font-mono">
+        <div className="p-3 border-t border-[#141414]/15 bg-[#efece6] flex flex-wrap items-center justify-between gap-2 text-[11px] font-mono">
           <span className="text-[#141414]/70">
             {selectedForCompare.length === 2
               ? '2 DDL snapshots selected.'

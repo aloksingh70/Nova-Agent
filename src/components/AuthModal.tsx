@@ -234,7 +234,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
       aria-modal="true"
       aria-labelledby="nova-auth-title"
       data-testid="oauth-auth-modal"
-      className="fixed inset-0 z-50 bg-[#141414]/45 flex items-center justify-center p-4 overflow-y-auto"
+      className="fixed inset-0 z-50 bg-[#141414]/45 flex items-start sm:items-center justify-center p-3 sm:p-4 overflow-y-auto"
     >
       <div className="corner-brackets w-full max-w-[440px] bg-[#efece6] border border-[#141414]/30 text-[#141414] shadow-xl my-auto">
         <span className="cb-tl" />
@@ -243,7 +243,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
         <span className="cb-br" />
 
         {/* Modal Header */}
-        <div className="flex items-center justify-between px-6 py-4 border-b border-[#141414]/15">
+        <div className="flex items-center justify-between px-4 sm:px-6 py-3.5 sm:py-4 border-b border-[#141414]/15">
           <NovaLogo />
           <button
             type="button"
@@ -255,7 +255,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
           </button>
         </div>
 
-        <div className="p-6 space-y-4">
+        <div className="p-4 sm:p-6 space-y-4">
           {/* Header Title */}
           <div className="space-y-1">
             <h2 id="nova-auth-title" className="text-[20px] font-medium tracking-[-0.02em]">

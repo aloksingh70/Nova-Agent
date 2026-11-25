@@ -21,9 +21,9 @@ export const AccountModal: React.FC<AccountModalProps> = ({
       role="dialog"
       aria-modal="true"
       aria-labelledby="nova-account-title"
-      className="fixed inset-0 z-50 bg-[#141414]/45 flex items-center justify-center p-4"
+      className="fixed inset-0 z-50 bg-[#141414]/45 flex items-start sm:items-center justify-center p-3 sm:p-4 overflow-y-auto"
     >
-      <div className="corner-brackets w-full max-w-[440px] bg-[#efece6] border border-[#141414]/30 text-[#141414] shadow-xl">
+      <div className="corner-brackets w-full max-w-[440px] bg-[#efece6] border border-[#141414]/30 text-[#141414] shadow-xl my-auto">
         <span className="cb-tl" />
         <span className="cb-tr" />
         <span className="cb-bl" />

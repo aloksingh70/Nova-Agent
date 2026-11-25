@@ -84,19 +84,19 @@ export const SqlCodeBlock: React.FC<SqlCodeBlockProps> = ({
       data-prism-language={prismLang}
       className="border border-[#141414]/20 bg-[#19191c] text-[#f3f0ea] overflow-hidden"
     >
-      <div className="flex items-center justify-between gap-4 px-3.5 py-2 border-b border-white/10 bg-[#141416]">
-        <div className="flex items-center gap-2.5 font-mono-label text-[10px] text-[#f3f0ea]/70 truncate">
-          <span className="text-[#f3f0ea] font-medium">{label}</span>
+      <div className="flex flex-wrap items-center justify-between gap-2 px-3 sm:px-3.5 py-2 border-b border-white/10 bg-[#141416]">
+        <div className="flex items-center gap-2 font-mono-label text-[10px] text-[#f3f0ea]/70 truncate min-w-0">
+          <span className="text-[#f3f0ea] font-medium truncate">{label}</span>
           <span aria-hidden="true">·</span>
-          <span>{language}</span>
+          <span className="shrink-0">{language}</span>
           {!compact && metrics.lineCount > 0 && (
             <>
-              <span aria-hidden="true">·</span>
-              <span className="tabular-nums">{metrics.lineCount} lines</span>
+              <span aria-hidden="true" className="hidden sm:inline">·</span>
+              <span className="tabular-nums hidden sm:inline">{metrics.lineCount} lines</span>
               {prismLang === 'sql' && metrics.joinCount > 0 && (
                 <>
-                  <span aria-hidden="true">·</span>
-                  <span className="tabular-nums">
+                  <span aria-hidden="true" className="hidden sm:inline">·</span>
+                  <span className="tabular-nums hidden sm:inline">
                     {metrics.joinCount} {metrics.joinCount === 1 ? 'join' : 'joins'}
                   </span>
                 </>
@@ -105,17 +105,18 @@ export const SqlCodeBlock: React.FC<SqlCodeBlockProps> = ({
           )}
         </div>
 
-        <div className="flex items-center gap-2.5 shrink-0">
+        <div className="flex flex-wrap items-center gap-1.5 sm:gap-2.5 shrink-0">
           {onRunInSandbox && (
             <button
               type="button"
               onClick={() => onRunInSandbox(code)}
               aria-label="Run in Live SQL Sandbox"
-              className="inline-flex items-center gap-1 px-2 py-0.5 border border-white/20 bg-white/5 hover:bg-white hover:text-[#141414] font-mono-label text-[10px] text-[#f3f0ea] transition-colors shrink-0 cursor-pointer"
+              className="inline-flex items-center gap-1 px-2 py-1 border border-white/20 bg-white/5 hover:bg-white hover:text-[#141414] font-mono-label text-[9.5px] sm:text-[10px] text-[#f3f0ea] transition-colors shrink-0 cursor-pointer"
               title="Execute in In-Browser Live SQL Sandbox"
             >
               <Play className="w-3 h-3 fill-current" />
-              <span>Run Sandbox</span>
+              <span className="sm:hidden">Sandbox</span>
+              <span className="hidden sm:inline">Run Sandbox</span>
             </button>
           )}
 
@@ -124,11 +125,12 @@ export const SqlCodeBlock: React.FC<SqlCodeBlockProps> = ({
               type="button"
               onClick={() => onExplainQuery(code)}
               aria-label="Explain Query Execution Plan"
-              className="inline-flex items-center gap-1 px-2 py-0.5 border border-white/20 bg-white/5 hover:bg-white hover:text-[#141414] font-mono-label text-[10px] text-[#f3f0ea] transition-colors shrink-0 cursor-pointer"
+              className="inline-flex items-center gap-1 px-2 py-1 border border-white/20 bg-white/5 hover:bg-white hover:text-[#141414] font-mono-label text-[9.5px] sm:text-[10px] text-[#f3f0ea] transition-colors shrink-0 cursor-pointer"
               title="Analyze Execution Plan & Bottlenecks"
             >
               <Sparkles className="w-3 h-3 text-[#ff5a5f]" />
-              <span>Explain Plan</span>
+              <span className="sm:hidden">Explain</span>
+              <span className="hidden sm:inline">Explain Plan</span>
             </button>
           )}
 
@@ -136,7 +138,7 @@ export const SqlCodeBlock: React.FC<SqlCodeBlockProps> = ({
             type="button"
             onClick={handleDownload}
             aria-label={`Download ${label} as .${fileExt}`}
-            className="inline-flex items-center gap-1 font-mono-label text-[10px] text-[#f3f0ea]/75 hover:text-[#ffb347] transition-colors shrink-0 cursor-pointer"
+            className="inline-flex items-center gap-1 px-1.5 py-1 font-mono-label text-[9.5px] sm:text-[10px] text-[#f3f0ea]/75 hover:text-[#ffb347] transition-colors shrink-0 cursor-pointer"
           >
             {downloaded ? (
               <Check className="w-3.5 h-3.5 text-[#ffb347]" />
@@ -151,7 +153,7 @@ export const SqlCodeBlock: React.FC<SqlCodeBlockProps> = ({
             onClick={handleCopy}
             data-testid="sql-copy-btn"
             aria-label="Copy to Clipboard"
-            className="inline-flex items-center gap-1 px-2 py-0.5 border border-white/20 bg-white/10 hover:bg-white hover:text-[#141414] font-mono-label text-[10px] text-[#f3f0ea] transition-colors shrink-0 cursor-pointer"
+            className="inline-flex items-center gap-1 px-2 py-1 border border-white/20 bg-white/10 hover:bg-white hover:text-[#141414] font-mono-label text-[9.5px] sm:text-[10px] text-[#f3f0ea] transition-colors shrink-0 cursor-pointer"
             title="Copy SQL to Clipboard"
           >
             {copied ? (
@@ -159,7 +161,8 @@ export const SqlCodeBlock: React.FC<SqlCodeBlockProps> = ({
             ) : (
               <Copy className="w-3.5 h-3.5" />
             )}
-            <span className="font-medium">{copied ? 'Copied to Clipboard!' : 'Copy to Clipboard'}</span>
+            <span className="font-medium sm:hidden">{copied ? 'Copied!' : 'Copy'}</span>
+            <span className="font-medium hidden sm:inline">{copied ? 'Copied to Clipboard!' : 'Copy to Clipboard'}</span>
           </button>
         </div>
       </div>

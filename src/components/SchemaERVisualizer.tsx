@@ -926,7 +926,7 @@ export const SchemaERVisualizer: React.FC<SchemaERVisualizerProps> = ({
         <div className="flex flex-col min-w-0 bg-[#f6f4ef]">
           {/* Diagram Toolbar */}
           <div className="px-4 py-2.5 border-b border-[#141414]/15 bg-[#efece6] flex flex-wrap items-center justify-between gap-2">
-            <div className="inline-flex border border-[#141414]/20 bg-[#f6f4ef]">
+            <div className="inline-flex overflow-x-auto max-w-full nova-tabs-scroll border border-[#141414]/20 bg-[#f6f4ef]">
               <button
                 type="button"
                 data-testid="er-tab-mermaid"
@@ -1142,10 +1142,10 @@ export const SchemaERVisualizer: React.FC<SchemaERVisualizerProps> = ({
 
           {/* Diagram Canvas (Mermaid ER or Visual Schema Diff) OR Mermaid Code */}
           {activeTab !== 'code' ? (
-            <div className="relative flex-1 min-h-[360px] max-h-[480px] overflow-hidden bg-[#f6f4ef]">
+            <div className="relative flex-1 min-h-[260px] sm:min-h-[360px] max-h-[380px] sm:max-h-[480px] overflow-hidden bg-[#f6f4ef]">
               {!activeMermaidCode.trim() ? (
-                <div className="h-[340px] flex flex-col items-center justify-center p-6 text-center space-y-3">
-                  <p className="text-[14px] text-[#141414]/75 max-w-md">
+                <div className="h-[260px] sm:h-[340px] flex flex-col items-center justify-center p-4 sm:p-6 text-center space-y-3">
+                  <p className="text-[13px] sm:text-[14px] text-[#141414]/75 max-w-md">
                     {isDiffMode
                       ? 'Paste Base (v1) and Target (v2) SQL DDL on the left to visualize added, removed, and modified tables and foreign keys.'
                       : parsed.parseErrors[0] ||
@@ -1180,7 +1180,7 @@ export const SchemaERVisualizer: React.FC<SchemaERVisualizerProps> = ({
                   onPointerMove={handlePointerMove}
                   onPointerUp={handlePointerUp}
                   onPointerCancel={handlePointerUp}
-                  className={`w-full h-[380px] overflow-auto nova-scroll select-none ${
+                  className={`w-full h-[280px] sm:h-[380px] overflow-auto nova-scroll select-none ${
                     isDragging ? 'cursor-grabbing' : 'cursor-grab'
                   }`}
                   style={{
@@ -1394,10 +1394,10 @@ export const SchemaERVisualizer: React.FC<SchemaERVisualizerProps> = ({
                       : 'border-emerald-500/40 bg-emerald-50/70 text-emerald-950'
                 }`}
               >
-                <div className="flex items-center justify-between">
+                <div className="flex flex-wrap items-center justify-between gap-2">
                   <span className="font-semibold flex items-center gap-1.5">
-                    <span className="w-2 h-2 rounded-full bg-current" />
-                    Migration Safety Check: Score {safetyReport.score}/100 ({safetyReport.status.toUpperCase()})
+                    <span className="w-2 h-2 rounded-full bg-current shrink-0" />
+                    <span>Migration Safety Check: Score {safetyReport.score}/100 ({safetyReport.status.toUpperCase()})</span>
                   </span>
                   <span className="text-[10px] opacity-80">
                     {safetyReport.hazards.length} {safetyReport.hazards.length === 1 ? 'hazard' : 'hazards'} identified
@@ -1428,7 +1428,7 @@ export const SchemaERVisualizer: React.FC<SchemaERVisualizerProps> = ({
 
               {/* View Selector: Up vs Down vs ORM Models */}
               <div className="flex flex-wrap items-center justify-between gap-2 border-b border-[#141414]/15 pb-2">
-                <div className="flex items-center gap-1">
+                <div className="flex flex-wrap items-center gap-1">
                   <button
                     type="button"
                     onClick={() => setMigrationView('up')}

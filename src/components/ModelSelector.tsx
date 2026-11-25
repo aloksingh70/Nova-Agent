@@ -119,9 +119,6 @@ export const ModelSelector: React.FC<ModelSelectorProps> = ({
         <span className="font-medium tracking-tight whitespace-nowrap hidden sm:inline">
           {value.name}
         </span>
-        <span className="font-medium tracking-tight whitespace-nowrap sm:hidden">
-          {value.providerName}
-        </span>
         <ChevronDown
           className={`w-3.5 h-3.5 text-[#141414]/50 transition-transform duration-150 ${
             isOpen ? 'rotate-180' : ''
@@ -134,7 +131,7 @@ export const ModelSelector: React.FC<ModelSelectorProps> = ({
         <div
           role="listbox"
           aria-label="Select AI Model"
-          className="absolute right-0 top-full mt-1.5 w-80 sm:w-96 bg-[#fbf9f5] border border-[#141414] shadow-2xl z-50 animate-in fade-in slide-in-from-top-1 duration-150 divide-y divide-[#141414]/10"
+          className="fixed inset-x-3 top-[58px] sm:inset-x-auto sm:absolute sm:right-0 sm:top-full sm:mt-1.5 sm:w-96 max-h-[calc(100dvh-72px)] overflow-y-auto nova-scroll bg-[#fbf9f5] border border-[#141414] shadow-2xl z-50 animate-in fade-in slide-in-from-top-1 duration-150 divide-y divide-[#141414]/10"
         >
           {/* Header */}
           <div className="p-3 bg-[#f2eee6]">

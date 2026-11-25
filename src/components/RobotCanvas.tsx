@@ -644,7 +644,8 @@ export const RobotCanvas: React.FC<RobotCanvasProps> = ({
     let targetPtrY = 0;
     let smoothPtrX = 0;
     let smoothPtrY = 0;
-    let isMobile = window.innerWidth < 900;
+    let isMobile = window.innerWidth < 900 || window.innerHeight < 540;
+    let isShortLandscape = window.innerWidth > window.innerHeight && window.innerHeight < 540;
 
     const onPointerMove = (e: PointerEvent) => {
       targetPtrX = (e.clientX / Math.max(window.innerWidth, 1)) * 2 - 1;
@@ -652,12 +653,17 @@ export const RobotCanvas: React.FC<RobotCanvasProps> = ({
     };
 
     const onResize = () => {
-      const w = window.innerWidth;
-      const h = window.innerHeight;
-      isMobile = w < 900;
+      const w = Math.max(window.innerWidth, 1);
+      const h = Math.max(window.innerHeight, 1);
+      isMobile = w < 900 || h < 540;
+      isShortLandscape = w > h && h < 540;
       camera.aspect = w / h;
       camera.updateProjectionMatrix();
       renderer.setSize(w, h);
+    };
+
+    const onOrientationChange = () => {
+      window.setTimeout(onResize, 120);
     };
 
     const onContextLost = (e: Event) => {
@@ -666,6 +672,7 @@ export const RobotCanvas: React.FC<RobotCanvasProps> = ({
 
     window.addEventListener('pointermove', onPointerMove, { passive: true });
     window.addEventListener('resize', onResize);
+    window.addEventListener('orientationchange', onOrientationChange);
     renderer.domElement.addEventListener('webglcontextlost', onContextLost);
 
     const clock = new THREE.Clock();
@@ -707,7 +714,7 @@ export const RobotCanvas: React.FC<RobotCanvasProps> = ({
       smoothPtrY += (targetPtrY - smoothPtrY) * ptrAlpha;
 
       const t = easeInOutCubic(Math.min(1, smoothScroll));
-      const baseZ = THREE.MathUtils.lerp(11.6, 6.9, t) * (isMobile ? 1.25 : 1);
+      const baseZ = THREE.MathUtils.lerp(11.6, 6.9, t) * (isShortLandscape ? 1.32 : isMobile ? 1.22 : 1);
       const baseY = THREE.MathUtils.lerp(1.1, 1.95, t);
       const lookY = THREE.MathUtils.lerp(0.55, 1.72, t);
       const baseBodyYaw = THREE.MathUtils.lerp(-0.42, -0.2, t);
@@ -751,6 +758,7 @@ export const RobotCanvas: React.FC<RobotCanvasProps> = ({
       clearTimeout(frameId);
       window.removeEventListener('pointermove', onPointerMove);
       window.removeEventListener('resize', onResize);
+      window.removeEventListener('orientationchange', onOrientationChange);
       renderer.domElement.removeEventListener('webglcontextlost', onContextLost);
 
       geometries.forEach((g) => g.dispose());

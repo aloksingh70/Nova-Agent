@@ -82,11 +82,11 @@ export const MultiDialectTranslator: React.FC<MultiDialectTranslatorProps> = ({
         </div>
 
         {/* Dialect Pickers */}
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto">
           <select
             value={fromDialect}
             onChange={(e) => setFromDialect(e.target.value as SqlDialect)}
-            className="h-8 px-2 bg-white border border-[#141414]/25 font-mono text-[11px] focus:outline-none cursor-pointer"
+            className="h-8 px-2 bg-white border border-[#141414]/25 font-mono text-[10.5px] sm:text-[11px] max-w-[140px] sm:max-w-none focus:outline-none cursor-pointer"
           >
             {DIALECT_OPTIONS.map((d) => (
               <option key={d.id} value={d.id}>
@@ -107,7 +107,7 @@ export const MultiDialectTranslator: React.FC<MultiDialectTranslatorProps> = ({
           <select
             value={toDialect}
             onChange={(e) => setToDialect(e.target.value as SqlDialect)}
-            className="h-8 px-2 bg-white border border-[#141414]/25 font-mono text-[11px] focus:outline-none cursor-pointer"
+            className="h-8 px-2 bg-white border border-[#141414]/25 font-mono text-[10.5px] sm:text-[11px] max-w-[140px] sm:max-w-none focus:outline-none cursor-pointer"
           >
             {DIALECT_OPTIONS.map((d) => (
               <option key={d.id} value={d.id}>
@@ -120,7 +120,7 @@ export const MultiDialectTranslator: React.FC<MultiDialectTranslatorProps> = ({
             <button
               type="button"
               onClick={() => onRunInSandbox(translation.translatedCode)}
-              className="px-2.5 py-1.5 bg-[#141414] text-[#efece6] hover:bg-[#2a2928] font-mono-label text-[10px] inline-flex items-center gap-1.5 transition-colors cursor-pointer ml-1"
+              className="px-2.5 py-1.5 bg-[#141414] text-[#efece6] hover:bg-[#2a2928] font-mono-label text-[10px] inline-flex items-center gap-1.5 transition-colors cursor-pointer"
             >
               <Play className="w-3 h-3 fill-current" />
               <span>Test in Sandbox</span>

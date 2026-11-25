@@ -144,8 +144,15 @@ export const LandingPage: React.FC<LandingPageProps> = ({
   const [typedText, setTypedText] = useState('');
   const [typingPhase, setTypingPhase] = useState<'typing' | 'hold' | 'deleting' | 'wait'>('typing');
 
-  // Product carousel state
+  // Product carousel state (tabs with horizontal rotation)
   const [activeTab, setActiveTab] = useState(0);
+  const [tabCarouselPaused, setTabCarouselPaused] = useState(false);
+  const tabScrollRef = useRef<HTMLDivElement | null>(null);
+  const tabTrackRef = useRef<HTMLDivElement | null>(null);
+  const [tabTranslatePx, setTabTranslatePx] = useState(0);
+
+  // Mobile/Tablet navigation drawer state
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   // Reviews carousel state
   const [reviewIdx, setReviewIdx] = useState(0);
@@ -257,13 +264,38 @@ export const LandingPage: React.FC<LandingPageProps> = ({
     return () => clearTimeout(timer);
   }, [typedText, typingPhase, promptIndex]);
 
-  // Product tab carousel timer (every 2.4s)
+  // Product tab carousel timer (every 2.6s when not hovered/paused)
   useEffect(() => {
+    if (tabCarouselPaused) return;
     const id = window.setInterval(() => {
       setActiveTab((prev) => (prev + 1) % (PRODUCT_TABS.length - 1));
-    }, 2400);
+    }, 2600);
     return () => clearInterval(id);
-  }, []);
+  }, [tabCarouselPaused]);
+
+  // Recalculate exact horizontal translation so 76vw (phone), 48vw (tablet), and 33vw (desktop) tabs align after rotation/resize
+  useEffect(() => {
+    const syncTabOffset = () => {
+      const track = tabTrackRef.current;
+      if (!track) return;
+      const target = track.children[activeTab] as HTMLElement | undefined;
+      if (target) {
+        setTabTranslatePx(target.offsetLeft);
+      }
+    };
+    syncTabOffset();
+    window.addEventListener('resize', syncTabOffset);
+    window.addEventListener('orientationchange', syncTabOffset);
+    return () => {
+      window.removeEventListener('resize', syncTabOffset);
+      window.removeEventListener('orientationchange', syncTabOffset);
+    };
+  }, [activeTab]);
+
+  const rotateProductTab = (delta: number) => {
+    const maxIdx = PRODUCT_TABS.length - 1;
+    setActiveTab((prev) => (prev + delta + maxIdx) % maxIdx);
+  };
 
   const cycleReview = (delta: number) => {
     if (reviewFading) return;
@@ -435,16 +467,27 @@ export const LandingPage: React.FC<LandingPageProps> = ({
         }`}
         style={{ transitionTimingFunction: 'cubic-bezier(0.6, 0, 0.2, 1)' }}
       >
-        <div className="h-full w-full flex lg:grid lg:grid-cols-[17%_1fr_12%_17%] items-center justify-between px-4 lg:px-0">
-          {/* Col 1: Brand Wordmark */}
-          <div className="lg:px-5 flex items-center">
+        <div className="h-full w-full flex lg:grid lg:grid-cols-[17%_1fr_12%_17%] items-center justify-between px-3 sm:px-4 lg:px-0">
+          {/* Col 1: Brand Wordmark + Mobile Menu Trigger */}
+          <div className="lg:px-5 flex items-center gap-2 shrink-0">
+            <button
+              type="button"
+              aria-label={mobileMenuOpen ? 'Close navigation menu' : 'Open navigation menu'}
+              aria-expanded={mobileMenuOpen}
+              onClick={() => setMobileMenuOpen((v) => !v)}
+              className="lg:hidden p-1.5 border border-[#141414]/20 bg-[#f6f4ef] hover:bg-[#141414]/5 text-[#141414] cursor-pointer shrink-0"
+            >
+              {mobileMenuOpen ? <X className="w-4 h-4" /> : <Menu className="w-4 h-4" />}
+            </button>
             <a
               href="#intro"
               onClick={(e) => {
                 e.preventDefault();
+                setMobileMenuOpen(false);
                 scrollToSection(introRef);
               }}
               aria-label="NOVA AGENT home"
+              className="shrink-0"
             >
               <NovaLogo />
             </a>
@@ -539,12 +582,12 @@ export const LandingPage: React.FC<LandingPageProps> = ({
           </a>
 
           {/* Col 4: Launch Nova Primary CTA */}
-          <div className="flex items-center justify-end lg:justify-center gap-2 lg:px-4">
+          <div className="flex items-center justify-end lg:justify-center gap-1.5 sm:gap-2 lg:px-4 shrink-0">
             {!user && (
               <button
                 type="button"
                 onClick={() => onOpenAuth('login')}
-                className="lg:hidden font-mono-label text-[11px] px-2.5 h-[30px] text-[#141414]/80 hover:text-[#141414] whitespace-nowrap shrink-0 cursor-pointer"
+                className="lg:hidden font-mono-label text-[10px] sm:text-[11px] px-1.5 sm:px-2.5 h-[30px] text-[#141414]/80 hover:text-[#141414] whitespace-nowrap shrink-0 cursor-pointer"
               >
                 Sign In
               </button>
@@ -556,13 +599,66 @@ export const LandingPage: React.FC<LandingPageProps> = ({
                 trackAnalyticsEvent('cta_click', { location: 'nav_launch' });
                 onOpenStudio();
               }}
-              className="nova-launch-btn h-[30px] px-3.5 font-mono-label text-[11px] text-[#141414] inline-flex items-center gap-1.5 whitespace-nowrap shrink-0"
+              className="nova-launch-btn h-[30px] px-2.5 sm:px-3.5 font-mono-label text-[10px] sm:text-[11px] text-[#141414] inline-flex items-center gap-1.5 whitespace-nowrap shrink-0"
             >
-              <span aria-hidden="true" className="tracking-tighter">••</span>
+              <span aria-hidden="true" className="hidden sm:inline tracking-tighter">••</span>
               <span>LAUNCH NOVA</span>
             </a>
           </div>
         </div>
+
+        {/* Mobile & Tablet Navigation Drawer (portrait & horizontal rotation) */}
+        {mobileMenuOpen && (
+          <nav
+            aria-label="Mobile navigation"
+            className="lg:hidden border-b border-[#141414]/20 bg-[#efece6] px-4 py-3 shadow-xl max-h-[calc(100dvh-85px)] overflow-y-auto nova-scroll"
+          >
+            <div className="flex flex-wrap gap-2">
+              {[
+                { label: 'Overview', ref: introRef },
+                { label: 'Capabilities', ref: productRef },
+                { label: 'Reviews', ref: reviewsRef },
+                { label: 'FAQ', ref: faqRef },
+                { label: 'Contact', ref: contactRef },
+              ].map((link) => (
+                <button
+                  key={link.label}
+                  type="button"
+                  onClick={() => {
+                    setMobileMenuOpen(false);
+                    scrollToSection(link.ref);
+                  }}
+                  className="px-3 py-1.5 border border-[#141414]/20 bg-[#f6f4ef] hover:bg-[#141414] hover:text-[#efece6] font-mono-label text-[10.5px] text-[#141414] transition-colors cursor-pointer"
+                >
+                  {link.label}
+                </button>
+              ))}
+              <button
+                type="button"
+                onClick={() => {
+                  setMobileMenuOpen(false);
+                  onOpenStudio({ mode: 'text-to-query' });
+                }}
+                className="px-3 py-1.5 border border-[#141414] bg-[#141414] text-[#efece6] font-mono-label text-[10.5px] inline-flex items-center gap-1 cursor-pointer"
+              >
+                <span>Nova Pad</span>
+                <ArrowUpRight className="w-3 h-3" />
+              </button>
+              {user && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setMobileMenuOpen(false);
+                    onLogout();
+                  }}
+                  className="px-3 py-1.5 border border-[#141414]/25 bg-[#f6f4ef] font-mono-label text-[10.5px] text-[#141414] cursor-pointer"
+                >
+                  {user.name.split(' ')[0]} · Sign Out
+                </button>
+              )}
+            </div>
+          </nav>
+        )}
       </header>
 
       {/* Fixed Right Rail (270px tall, vertically centered, hidden <= 900px) */}
@@ -619,12 +715,12 @@ export const LandingPage: React.FC<LandingPageProps> = ({
 
       {/* Main Content Layered Above 3D Canvas */}
       <main id="main-content" className="relative z-10">
-        {/* ================= SECTION 1: INTRO (100vh) ================= */}
+        {/* ================= SECTION 1: INTRO (100dvh) ================= */}
         <section
           id="intro"
           ref={introRef}
           data-reveal-key="intro"
-          className="relative h-screen min-h-[680px] w-full overflow-hidden"
+          className="relative min-h-[100dvh] lg:[@media(min-height:620px)]:h-[100dvh] w-full overflow-x-clip flex flex-col justify-between gap-6 pt-[96px] pb-6 px-4 sm:px-8 lg:block lg:p-0"
         >
           {/* Horizontal hairline rule from prompt box to right guide */}
           <div
@@ -632,14 +728,14 @@ export const LandingPage: React.FC<LandingPageProps> = ({
             className="hidden lg:block absolute top-[30%] left-[39.5%] right-[17%] h-px bg-[#141414]/15"
           />
 
-          {/* Auto-Typing Prompt Box (left 17%, top 30%, width 22.5%) */}
+          {/* Auto-Typing Prompt Box (flow on mobile/tablet/landscape, 17%/30% on tall desktop) */}
           <div
-            className={`rv rv-d1 ${revealed.intro ? 'rv-in' : ''} absolute top-[11.5%] lg:top-[30%] left-4 right-4 lg:right-auto lg:left-[17%] lg:w-[22.5%]`}
+            className={`rv rv-d1 ${revealed.intro ? 'rv-in' : ''} relative w-full max-w-[480px] lg:[@media(min-height:620px)]:max-w-none lg:[@media(min-height:620px)]:absolute lg:[@media(min-height:620px)]:top-[30%] lg:[@media(min-height:620px)]:left-[17%] lg:[@media(min-height:620px)]:w-[22.5%]`}
           >
             {/* 42px square serif quote tab */}
             <div
               aria-hidden="true"
-              className="w-[36px] h-[36px] lg:w-[42px] lg:h-[42px] border border-b-0 border-[#141414]/25 bg-[#efece6]/[0.94] flex items-center justify-center font-serif text-[28px] lg:text-[32px] leading-none pt-2.5 lg:pt-3 text-[#141414]"
+              className="w-[34px] h-[34px] lg:w-[42px] lg:h-[42px] border border-b-0 border-[#141414]/25 bg-[#efece6]/[0.94] flex items-center justify-center font-serif text-[26px] lg:text-[32px] leading-none pt-2 lg:pt-3 text-[#141414]"
             >
               “
             </div>
@@ -713,121 +809,171 @@ export const LandingPage: React.FC<LandingPageProps> = ({
             className="hidden lg:block absolute bottom-[14%] left-1/2 right-0 h-px bg-[#141414]/15"
           />
 
-          {/* Bottom Left Hero Headline */}
-          <div
-            className={`rv rv-d3 ${revealed.intro ? 'rv-in' : ''} absolute bottom-5 lg:bottom-[4.5%] left-4 lg:left-[4%] max-w-[92vw]`}
-          >
-            <p className="font-mono-label text-[11px] lg:text-[12px] text-[#141414]/75 mb-2.5 inline-block bg-[#efece6]/90 lg:bg-transparent px-1.5 lg:px-0 py-0.5">
-              UNLEASH THE POWER OF
+          {/* Bottom Row Wrapper on Mobile/Tablet/Landscape */}
+          <div className="flex flex-wrap items-end justify-between gap-4 lg:contents">
+            {/* Bottom Left Hero Headline */}
+            <div
+              className={`rv rv-d3 ${revealed.intro ? 'rv-in' : ''} relative lg:[@media(min-height:620px)]:absolute lg:[@media(min-height:620px)]:bottom-[4.5%] lg:[@media(min-height:620px)]:left-[4%] max-w-[92vw]`}
+            >
+              <p className="font-mono-label text-[10.5px] sm:text-[11px] lg:text-[12px] text-[#141414]/75 mb-2 inline-block bg-[#efece6]/90 lg:bg-transparent px-1.5 lg:px-0 py-0.5">
+                UNLEASH THE POWER OF
+              </p>
+              <h1 className="flex flex-col items-start gap-1.5 sm:gap-2 font-normal tracking-[-0.03em] leading-[0.98] text-[clamp(34px,5.25vw,92px)]">
+                <span className="headline-box-thinking">Thinking</span>
+                <span className="headline-box-machines">Machines</span>
+              </h1>
+            </div>
+
+            {/* Sub line at bottom 3.6%, left 62% + 18px */}
+            <p
+              className={`rv rv-d4 ${revealed.intro ? 'rv-in' : ''} hidden md:block lg:[@media(min-height:620px)]:absolute lg:[@media(min-height:620px)]:bottom-[3.6%] lg:[@media(min-height:620px)]:left-[calc(62%+18px)] max-w-[260px] text-[13.5px] lg:text-[14.5px] leading-[1.45] text-[#141414]/80 bg-[#efece6]/90 lg:bg-transparent px-2 lg:px-0 py-1`}
+            >
+              Your personal AI architect for SQL queries, ER diagrams, query optimization &amp;
+              debugging.
             </p>
-            <h1 className="flex flex-col items-start gap-2 font-normal tracking-[-0.03em] leading-[0.98] text-[clamp(42px,5.25vw,92px)]">
-              <span className="headline-box-thinking">Thinking</span>
-              <span className="headline-box-machines">Machines</span>
-            </h1>
+
+            {/* Bottom Right Scroll Link */}
+            <button
+              type="button"
+              onClick={() => scrollToSection(productRef)}
+              aria-label="Scroll to product capabilities"
+              className="relative lg:[@media(min-height:620px)]:absolute lg:[@media(min-height:620px)]:bottom-[3.8%] lg:[@media(min-height:620px)]:right-[3.5%] inline-flex items-center gap-2 sm:gap-3 font-mono-label text-[11px] text-[#141414] bg-[#efece6]/90 lg:bg-transparent px-2 py-1 cursor-pointer hover:opacity-75 transition-opacity shrink-0"
+            >
+              <span>SCROLL</span>
+              <span className="corner-brackets w-7 h-7 border border-[#141414]/25 flex items-center justify-center">
+                <span className="cb-tl" />
+                <span className="cb-tr" />
+                <span className="cb-bl" />
+                <span className="cb-br" />
+                <ArrowDown className="w-3.5 h-3.5 animate-bob" aria-hidden="true" />
+              </span>
+            </button>
           </div>
-
-          {/* Sub line at bottom 3.6%, left 62% + 18px */}
-          <p
-            className={`rv rv-d4 ${revealed.intro ? 'rv-in' : ''} hidden md:block absolute bottom-[3.6%] left-[calc(62%+18px)] max-w-[260px] text-[14.5px] leading-[1.45] text-[#141414]/80 bg-[#efece6]/90 lg:bg-transparent px-2 lg:px-0 py-1`}
-          >
-            Your personal AI architect for SQL queries, ER diagrams, query optimization &amp;
-            debugging.
-          </p>
-
-          {/* Bottom Right Scroll Link */}
-          <button
-            type="button"
-            onClick={() => scrollToSection(productRef)}
-            aria-label="Scroll to product capabilities"
-            className="absolute bottom-5 lg:bottom-[3.8%] right-4 lg:right-[3.5%] inline-flex items-center gap-3 font-mono-label text-[11px] text-[#141414] bg-[#efece6]/90 lg:bg-transparent px-2 py-1 cursor-pointer hover:opacity-75 transition-opacity"
-          >
-            <span>SCROLL</span>
-            <span className="corner-brackets w-7 h-7 border border-[#141414]/25 flex items-center justify-center">
-              <span className="cb-tl" />
-              <span className="cb-tr" />
-              <span className="cb-bl" />
-              <span className="cb-br" />
-              <ArrowDown className="w-3.5 h-3.5 animate-bob" aria-hidden="true" />
-            </span>
-          </button>
         </section>
 
-        {/* ================= SECTION 2: PRODUCT (100vh) ================= */}
+        {/* ================= SECTION 2: PRODUCT (100dvh, Tabs with Horizontal Rotation) ================= */}
         <section
           id="product"
           ref={productRef}
           data-reveal-key="product"
-          className="relative h-screen min-h-[680px] w-full overflow-hidden"
+          className="relative min-h-[100dvh] lg:[@media(min-height:620px)]:h-[100dvh] w-full overflow-x-clip flex flex-col justify-between gap-6 pt-[96px] pb-8 px-4 sm:px-8 lg:block lg:p-0"
         >
-          {/* 74px Tab Carousel Strip starting at 17% guide */}
+          {/* 74px Tab Carousel Strip with Horizontal Rotation + Controls */}
           <div
-            className={`rv rv-d1 ${revealed.product ? 'rv-in' : ''} absolute top-[14%] left-4 lg:left-[17%] right-0 overflow-hidden py-2`}
+            onMouseEnter={() => setTabCarouselPaused(true)}
+            onMouseLeave={() => setTabCarouselPaused(false)}
+            onTouchStart={() => setTabCarouselPaused(true)}
+            className={`rv rv-d1 ${revealed.product ? 'rv-in' : ''} relative lg:[@media(min-height:620px)]:absolute lg:[@media(min-height:620px)]:top-[14%] lg:[@media(min-height:620px)]:left-[17%] lg:[@media(min-height:620px)]:right-0 py-2 space-y-2.5`}
           >
+            {/* Horizontal Rotation Navigation Header (mobile/tablet/landscape accessible) */}
+            <div className="flex items-center justify-between gap-2 pr-0 lg:pr-[17%]">
+              <span className="font-mono-label text-[10px] text-[#141414]/60 bg-[#efece6]/90 px-2 py-0.5 border border-[#141414]/15">
+                Module {String(activeTab + 1).padStart(2, '0')} / {String(PRODUCT_TABS.length - 1).padStart(2, '0')}
+              </span>
+              <div className="flex items-center gap-1.5">
+                <button
+                  type="button"
+                  aria-label="Rotate previous module tab"
+                  onClick={() => {
+                    setTabCarouselPaused(true);
+                    rotateProductTab(-1);
+                  }}
+                  className="w-8 h-8 border border-[#141414]/25 bg-[#efece6]/95 hover:bg-[#141414] hover:text-[#efece6] flex items-center justify-center transition-colors cursor-pointer"
+                >
+                  <ArrowLeft className="w-3.5 h-3.5" aria-hidden="true" />
+                </button>
+                <button
+                  type="button"
+                  aria-label="Rotate next module tab"
+                  onClick={() => {
+                    setTabCarouselPaused(true);
+                    rotateProductTab(1);
+                  }}
+                  className="w-8 h-8 border border-[#141414]/25 bg-[#efece6]/95 hover:bg-[#141414] hover:text-[#efece6] flex items-center justify-center transition-colors cursor-pointer"
+                >
+                  <ArrowRight className="w-3.5 h-3.5" aria-hidden="true" />
+                </button>
+              </div>
+            </div>
+
             <div
-              className="flex transition-transform duration-[900ms]"
-              style={{
-                transform: `translateX(-${activeTab * 33}vw)`,
-                transitionTimingFunction: 'cubic-bezier(0.65, 0, 0.2, 1)',
-              }}
+              ref={tabScrollRef}
+              className="overflow-hidden touch-pan-y"
             >
-              {PRODUCT_TABS.map((tab, idx) => {
-                const isActive = idx === activeTab;
-                const isPassed = idx < activeTab;
-                return (
-                  <button
-                    key={`${tab.num}-${idx}`}
-                    type="button"
-                    onClick={() => onOpenStudio({ mode: tab.mode })}
-                    className={`shrink-0 w-[76vw] sm:w-[48vw] lg:w-[33vw] h-[74px] flex items-center text-left transition-opacity duration-500 cursor-pointer ${
-                      isPassed
-                        ? 'opacity-0 pointer-events-none'
-                        : isActive
-                        ? 'opacity-100'
-                        : 'opacity-20 hover:opacity-50'
-                    }`}
-                  >
-                    <div
-                      className={`h-full w-[92%] flex items-center transition-colors ${
-                        isActive
-                          ? 'corner-brackets border border-[#141414]/35 bg-[#efece6]/[0.92]'
-                          : 'border border-[#141414]/15 bg-transparent'
+              <div
+                ref={tabTrackRef}
+                className="flex transition-transform duration-[750ms]"
+                style={{
+                  transform: `translateX(-${tabTranslatePx}px)`,
+                  transitionTimingFunction: 'cubic-bezier(0.65, 0, 0.2, 1)',
+                }}
+              >
+                {PRODUCT_TABS.map((tab, idx) => {
+                  const isActive = idx === activeTab;
+                  const isPassed = idx < activeTab;
+                  return (
+                    <button
+                      key={`${tab.num}-${idx}`}
+                      type="button"
+                      onClick={() => {
+                        if (isActive) {
+                          onOpenStudio({ mode: tab.mode });
+                        } else {
+                          setTabCarouselPaused(true);
+                          setActiveTab(idx % (PRODUCT_TABS.length - 1));
+                        }
+                      }}
+                      className={`shrink-0 w-[76vw] sm:w-[48vw] lg:w-[33vw] h-[74px] flex items-center text-left transition-opacity duration-500 cursor-pointer ${
+                        isPassed
+                          ? 'opacity-30 lg:opacity-0 lg:pointer-events-none'
+                          : isActive
+                          ? 'opacity-100'
+                          : 'opacity-40 hover:opacity-75'
                       }`}
                     >
-                      {isActive && (
-                        <>
-                          <span className="cb-tl" />
-                          <span className="cb-tr" />
-                          <span className="cb-bl" />
-                          <span className="cb-br" />
-                        </>
-                      )}
-                      <span className="w-[68px] h-full border-r border-[#141414]/15 flex items-center justify-center font-mono-label text-[12px] tabular-nums shrink-0">
-                        {tab.num}
-                      </span>
-                      <span className="px-5 text-[18px] lg:text-[20px] font-normal tracking-[-0.02em] truncate flex-1">
-                        {tab.label}
-                      </span>
-                      {isActive && (
-                        <ArrowUpRight
-                          className="w-4 h-4 mr-4 text-[#141414]/60 shrink-0"
-                          aria-hidden="true"
-                        />
-                      )}
-                    </div>
-                  </button>
-                );
-              })}
+                      <div
+                        className={`h-full w-[92%] flex items-center transition-colors ${
+                          isActive
+                            ? 'corner-brackets border border-[#141414]/35 bg-[#efece6]/[0.94]'
+                            : 'border border-[#141414]/20 bg-[#efece6]/65'
+                        }`}
+                      >
+                        {isActive && (
+                          <>
+                            <span className="cb-tl" />
+                            <span className="cb-tr" />
+                            <span className="cb-bl" />
+                            <span className="cb-br" />
+                          </>
+                        )}
+                        <span className="w-[54px] sm:w-[68px] h-full border-r border-[#141414]/15 flex items-center justify-center font-mono-label text-[12px] tabular-nums shrink-0">
+                          {tab.num}
+                        </span>
+                        <span className="px-3.5 sm:px-5 text-[16px] sm:text-[18px] lg:text-[20px] font-normal tracking-[-0.02em] truncate flex-1">
+                          {tab.label}
+                        </span>
+                        {isActive && (
+                          <ArrowUpRight
+                            className="w-4 h-4 mr-3.5 sm:mr-4 text-[#141414]/60 shrink-0"
+                            aria-hidden="true"
+                          />
+                        )}
+                      </div>
+                    </button>
+                  );
+                })}
+              </div>
             </div>
           </div>
 
           {/* Bottom Left Headline */}
           <div
-            className={`rv rv-d2 ${revealed.product ? 'rv-in' : ''} absolute bottom-[10%] left-4 lg:left-[4%] max-w-[92vw]`}
+            className={`rv rv-d2 ${revealed.product ? 'rv-in' : ''} relative lg:[@media(min-height:620px)]:absolute lg:[@media(min-height:620px)]:bottom-[10%] lg:[@media(min-height:620px)]:left-[4%] max-w-[92vw]`}
           >
             <div aria-hidden="true" className="font-mono-label text-[14px] text-[#141414]/65 mb-2">
               ··
             </div>
-            <h2 className="text-[clamp(30px,3.05vw,54px)] font-normal tracking-[-0.025em] leading-[1.12] flex flex-col items-start gap-2">
+            <h2 className="text-[clamp(28px,3.05vw,54px)] font-normal tracking-[-0.025em] leading-[1.12] flex flex-col items-start gap-2">
               <span className="inline-block border border-[#141414]/30 rounded-[8px] px-4 py-1.5 bg-[#efece6]/90 lg:bg-[#efece6]/70">
                 Your Gateway
               </span>
@@ -852,19 +998,19 @@ export const LandingPage: React.FC<LandingPageProps> = ({
           </div>
         </section>
 
-        {/* ================= SECTION 3: REVIEWS (100vh) ================= */}
+        {/* ================= SECTION 3: REVIEWS (100dvh) ================= */}
         <section
           id="reviews"
           ref={reviewsRef}
           data-reveal-key="reviews"
-          className="relative h-screen min-h-[680px] w-full overflow-hidden"
+          className="relative min-h-[100dvh] lg:[@media(min-height:620px)]:h-[100dvh] w-full overflow-x-clip flex flex-col justify-between gap-6 pt-[96px] pb-8 px-4 sm:px-8 lg:block lg:p-0"
         >
           {/* 60px Header Strip near top with hairline under it */}
           <div
-            className={`rv rv-d1 ${revealed.reviews ? 'rv-in' : ''} absolute top-[11%] left-0 right-0 h-[64px] border-b border-[#141414]/15 flex items-center px-4 lg:px-0`}
+            className={`rv rv-d1 ${revealed.reviews ? 'rv-in' : ''} relative lg:[@media(min-height:620px)]:absolute lg:[@media(min-height:620px)]:top-[11%] lg:[@media(min-height:620px)]:left-0 lg:[@media(min-height:620px)]:right-0 min-h-[64px] py-2 border-b border-[#141414]/15 flex items-center bg-[#efece6]/85 lg:bg-transparent px-3 lg:px-0`}
           >
             <div className="w-full lg:pl-[17%] lg:pr-[17%] flex items-center justify-between gap-4">
-              <div className="flex items-center gap-4 min-w-0">
+              <div className="flex items-center gap-3 sm:gap-4 min-w-0">
                 <div className="flex items-center gap-2 font-mono-label text-[11px] text-[#141414]/70 shrink-0">
                   <span>TSTMNL</span>
                   <span className="px-1.5 py-0.5 border border-[#141414]/25 tabular-nums text-[#141414]">
@@ -882,14 +1028,14 @@ export const LandingPage: React.FC<LandingPageProps> = ({
                     reviewFading ? 'opacity-0 translate-y-2.5' : 'opacity-100 translate-y-0'
                   }`}
                 >
-                  <span className="flex items-center gap-2 text-[15px] font-medium text-[#141414] truncate">
+                  <span className="flex items-center gap-2 text-[14px] sm:text-[15px] font-medium text-[#141414] truncate">
                     <span
                       aria-hidden="true"
                       className="w-1.5 h-1.5 rounded-full bg-[#141414] shrink-0"
                     />
                     <span className="truncate">{activeReview.name}</span>
                   </span>
-                  <span className="font-mono-label text-[10.5px] sm:text-[11px] text-[#141414]/55 truncate">
+                  <span className="font-mono-label text-[10px] sm:text-[11px] text-[#141414]/55 truncate">
                     {activeReview.role}
                   </span>
                 </div>
@@ -897,19 +1043,19 @@ export const LandingPage: React.FC<LandingPageProps> = ({
             </div>
           </div>
 
-          {/* Left Quote Block (top 26%, 22vw wide) */}
+          {/* Left Quote Block */}
           <div
-            className={`rv rv-d2 ${revealed.reviews ? 'rv-in' : ''} absolute top-[26%] left-4 right-4 lg:right-auto lg:left-[17%] lg:w-[21.5vw]`}
+            className={`rv rv-d2 ${revealed.reviews ? 'rv-in' : ''} relative w-full lg:[@media(min-height:620px)]:absolute lg:[@media(min-height:620px)]:top-[26%] lg:[@media(min-height:620px)]:left-[17%] lg:[@media(min-height:620px)]:w-[21.5vw]`}
           >
             <blockquote
-              className={`text-[clamp(19px,1.95vw,32px)] font-normal tracking-[-0.025em] leading-[1.22] text-[#141414] bg-[#efece6]/90 lg:bg-transparent p-3 lg:p-0 transition-all duration-[420ms] ${
+              className={`text-[clamp(18px,1.95vw,32px)] font-normal tracking-[-0.025em] leading-[1.22] text-[#141414] bg-[#efece6]/90 lg:bg-transparent p-3.5 lg:p-0 transition-all duration-[420ms] ${
                 reviewFading ? 'opacity-0 translate-y-2.5' : 'opacity-100 translate-y-0'
               }`}
             >
               {activeReview.quote}
             </blockquote>
 
-            <div className="mt-6 flex items-center gap-3 bg-[#efece6]/90 lg:bg-transparent px-3 lg:px-0 py-1.5 w-fit">
+            <div className="mt-4 sm:mt-6 flex items-center gap-3 bg-[#efece6]/90 lg:bg-transparent px-3 lg:px-0 py-1.5 w-fit">
               <span aria-hidden="true" className="w-8 h-px bg-[#141414]/45" />
               <a
                 href="/studio"
@@ -936,7 +1082,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({
           </div>
 
           {/* Bottom Left Prev / Next Arrows */}
-          <div className="absolute bottom-[10%] left-4 lg:left-[17%] flex items-center gap-3">
+          <div className="relative lg:[@media(min-height:620px)]:absolute lg:[@media(min-height:620px)]:bottom-[10%] lg:[@media(min-height:620px)]:left-[17%] flex items-center gap-3">
             <button
               type="button"
               aria-label="Previous review"
